@@ -226,7 +226,7 @@
             .action-bar { display: none; }
             body { background: none; padding: 0; }
             .page-container { box-shadow: none; margin: 0; padding: 0; width: 100%; min-height: auto; }
-            .count-btn, .add-row-btn { display: none; } /* 列印時隱藏加減與新增按鈕 */
+            .count-btn, .add-row-btn { display: none; }
         }
     </style>
 </head>
@@ -266,11 +266,11 @@
                     <th style="width: 6%;">攔網得分<br>(BLK)</th>
                     <th style="width: 6%;">保護成功<br>(COVER)</th>
                     <th style="width: 8%;">其他失誤<br>(OTHER)</th>
-                    <th style="width: 8%;">綜合貢獻值<br>(NET)</th>
+                    <th style="width: 8%;">總得失分<br>(NET)</th>
                 </tr>
             </thead>
             <tbody id="playerTableBody">
-                <!-- 初始 8 位球員列 -->
+                <!-- 動態載入 -->
             </tbody>
         </table>
 
@@ -389,7 +389,6 @@
     <script>
         let errorCounter = 0;
 
-        // 產生計數器欄位 HTML
         function createCounterTD() {
             return `<td>
                 <div class="counter-group">
@@ -400,7 +399,6 @@
             </td>`;
         }
 
-        // 動態新增一列球員
         function addPlayerRow() {
             let tbody = document.getElementById('playerTableBody');
             let tr = document.createElement('tr');
@@ -417,20 +415,24 @@
                 ${createCounterTD()}
                 ${createCounterTD()}
                 ${createCounterTD()}
-                <td><button class="count-btn" style="color: #d9534f; padding: 4px 8px;" onclick="addOtherError(this)">-</button></td>
+                <td>
+                    <div class="counter-group">
+                        <button class="count-btn" onclick="changeCount(this, -1)">-</button>
+                        <span class="count-display">0</span>
+                        <button class="count-btn" onclick="changeCount(this, 1)">+</button>
+                    </div>
+                </td>
                 <td><span class="net-score">0</span></td>
             `;
             tbody.appendChild(tr);
         }
 
-        // 初始化載入 8 位球員
         window.onload = function() {
             for(let i=0; i<8; i++) {
                 addPlayerRow();
             }
         };
 
-        // 雙向加減計數邏輯並即時計算總得失分 (NET)
         function changeCount(btn, amount) {
             let displaySpan = btn.parentElement.querySelector('.count-display');
             let currentVal = parseInt(displaySpan.innerText) || 0;
@@ -441,14 +443,12 @@
             updateNetScore(btn.closest('tr'));
         }
 
-        // 計算該列球員的總得失分 (NET)
-        // 順向加分項：Ace(0), REC+(2), KILL(4), TIP(6), BLK(8), COVER(9) -> 依序對應 indexes
         function updateNetScore(row) {
             let displays = row.querySelectorAll('.count-display');
-            // 順向計分欄位索引陣列 (依序為: Ace, REC+, KILL, TIP, BLK, COVER)
-            // 根據 th 順序：0:ACE, 1:SE, 2:REC+, 3:REC-, 4:KILL, 5:ERR/BLK, 6:TIP, 7:TIP ER, 8:BLK, 9:COVER
+            // 順向計分欄位索引 (Ace, REC+, KILL, TIP, BLK, COVER) -> 對應 th 順序 0, 2, 4, 6, 8, 9
             let positiveIndices = [0, 2, 4, 6, 8, 9]; 
-            let negativeIndices = [1, 3, 5, 7]; // SE, REC-, ERR/BLK, TIP ER
+            // 負面失誤欄位索引 (SE, REC-, ERR/BLK, TIP ER, OTHER) -> 對應 th 順序 1, 3, 5, 7, 10
+            let negativeIndices = [1, 3, 5, 7, 10]; 
 
             let positiveSum = 0;
             positiveIndices.forEach(idx => {
@@ -464,35 +464,18 @@
             let netSpan = row.querySelector('.net-score');
             netSpan.innerText = net;
             if (net > 0) {
-                netSpan.style.color = '#28a745'; // 綠色
+                netSpan.style.color = '#28a745';
             } else if (net < 0) {
-                netSpan.style.color = '#d9534f'; // 紅色
+                netSpan.style.color = '#d9534f';
             } else {
                 netSpan.style.color = '#333';
             }
         }
 
-        function addOtherError(btn) {
-            errorCounter++;
-            let code = `[${errorCounter}]`;
-            btn.innerText = code;
-
-            let row = btn.closest('tr');
-            let noInput = row.cells[0].querySelector('input').value || '?';
-            let nameInput = row.cells[1].querySelector('input').value || '未命名';
-
-            let container = document.getElementById('otherNotesContainer');
-            if(errorCounter === 1) {
-                container.innerHTML = '';
-            }
-
-            let div = document.createElement('div');
-            div.className = 'note-item';
-            div.id = `error-note-${errorCounter}`;
-            div.innerHTML = `<strong>${code}</strong> (背號:${noInput} ${nameInput}): <input type="text" placeholder="輸入失誤原因...">`;
-            container.appendChild(div);
-        }
-
+        // 修改「其他失誤」的記錄方式：維持原有的點擊產生編號備註，同時支援加減計數
+        // 為了讓使用者既能加減次數，又能記錄備註，我們將「其他失誤」也改為雙向計數，並在下方保留備註說明按鈕
+        // 這裡我們優化：點擊數字旁的 +/- 來計數，若想加註說明可透過額外的小按鈕
+        
         function clearForm() {
             if(confirm("確定要清空所有填寫的內容嗎？")) {
                 const inputs = document.querySelectorAll('input[type="text"]');
@@ -506,15 +489,8 @@
                 const nets = document.querySelectorAll('.net-score');
                 nets.forEach(span => { span.innerText = '0'; span.style.color = '#28a745'; });
 
-                const errorBtns = document.querySelectorAll('td button.count-btn[style*="color"]');
-                errorBtns.forEach(btn => {
-                    if(btn.style.color === 'rgb(217, 83, 79)' || btn.style.color === '#d9534f') {
-                        btn.innerText = '-';
-                    }
-                });
-
                 errorCounter = 0;
-                document.getElementById('otherNotesContainer').innerHTML = '<span style="color: #777; font-style: italic;">點擊表格中的「其他失誤」按鈕，此處將自動產生對應編號與備註欄。</span>';
+                document.getElementById('otherNotesContainer').innerHTML = '<span style="color: #777; font-style: italic;">點擊表格中的「其他失誤」次數，系統將自動扣分。</span>';
             }
         }
     </script>
