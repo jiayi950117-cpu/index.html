@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>排球比賽記錄表 (互動升級版)</title>
+    <title>排球比賽記錄表 </title>
     <style>
         /* A4 橫式設定 */
         @page {
@@ -279,7 +279,7 @@
         <div class="notes-section">
             <h4>其他失誤代號說明 (Other Error Notes):</h4>
             <div id="otherNotesContainer">
-                <span style="color: #777; font-style: italic;">點擊表格中的「其他失誤」按鈕，此處將自動產生對應編號與備註欄。</span>
+                <span style="color: #777; font-style: italic;">點擊「其他失誤」欄位中的記事按鈕（📝），此處將自動產生對應編號與備註欄。</span>
             </div>
         </div>
     </div>
@@ -421,6 +421,7 @@
                         <span class="count-display">0</span>
                         <button class="count-btn" onclick="changeCount(this, 1)">+</button>
                     </div>
+                    <button class="count-btn" style="color: #d9534f; margin-left: 2px;" title="新增文字備註" onclick="addOtherError(this)">📝</button>
                 </td>
                 <td><span class="net-score">0</span></td>
             `;
@@ -445,9 +446,9 @@
 
         function updateNetScore(row) {
             let displays = row.querySelectorAll('.count-display');
-            // 順向計分欄位索引 (Ace, REC+, KILL, TIP, BLK, COVER) -> 對應 th 順序 0, 2, 4, 6, 8, 9
+            // 順向計分欄位索引 (Ace, REC+, KILL, TIP, BLK, COVER) -> 0, 2, 4, 6, 8, 9
             let positiveIndices = [0, 2, 4, 6, 8, 9]; 
-            // 負面失誤欄位索引 (SE, REC-, ERR/BLK, TIP ER, OTHER) -> 對應 th 順序 1, 3, 5, 7, 10
+            // 負面失誤欄位索引 (SE, REC-, ERR/BLK, TIP ER, OTHER) -> 1, 3, 5, 7, 10
             let negativeIndices = [1, 3, 5, 7, 10]; 
 
             let positiveSum = 0;
@@ -472,10 +473,36 @@
             }
         }
 
-        // 修改「其他失誤」的記錄方式：維持原有的點擊產生編號備註，同時支援加減計數
-        // 為了讓使用者既能加減次數，又能記錄備註，我們將「其他失誤」也改為雙向計數，並在下方保留備註說明按鈕
-        // 這裡我們優化：點擊數字旁的 +/- 來計數，若想加註說明可透過額外的小按鈕
-        
+        // 點擊 📝 按鈕時自動增加計數並在下方新增文字備註欄
+        function addOtherError(btn) {
+            errorCounter++;
+            let code = `[${errorCounter}]`;
+
+            // 同時讓該球員的「其他失誤」計數 +1
+            let counterGroup = btn.closest('.counter-group') || btn.parentElement;
+            let displaySpan = counterGroup.querySelector('.count-display');
+            if (displaySpan) {
+                let currentVal = parseInt(displaySpan.innerText) || 0;
+                displaySpan.innerText = currentVal + 1;
+                updateNetScore(btn.closest('tr'));
+            }
+
+            let row = btn.closest('tr');
+            let noInput = row.cells[0].querySelector('input').value || '?';
+            let nameInput = row.cells[1].querySelector('input').value || '未命名';
+
+            let container = document.getElementById('otherNotesContainer');
+            if(errorCounter === 1) {
+                container.innerHTML = '';
+            }
+
+            let div = document.createElement('div');
+            div.className = 'note-item';
+            div.id = `error-note-${errorCounter}`;
+            div.innerHTML = `<strong>${code}</strong> (背號:${noInput} ${nameInput}): <input type="text" placeholder="輸入失誤原因...">`;
+            container.appendChild(div);
+        }
+
         function clearForm() {
             if(confirm("確定要清空所有填寫的內容嗎？")) {
                 const inputs = document.querySelectorAll('input[type="text"]');
@@ -490,7 +517,7 @@
                 nets.forEach(span => { span.innerText = '0'; span.style.color = '#28a745'; });
 
                 errorCounter = 0;
-                document.getElementById('otherNotesContainer').innerHTML = '<span style="color: #777; font-style: italic;">點擊表格中的「其他失誤」次數，系統將自動扣分。</span>';
+                document.getElementById('otherNotesContainer').innerHTML = '<span style="color: #777; font-style: italic;">點擊「其他失誤」欄位中的記事按鈕（📝），此處將自動產生對應編號與備註欄。</span>';
             }
         }
     </script>
