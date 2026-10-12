@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>排球比賽記錄表 (雙向計數互動版)</title>
+    <title>排球比賽記錄表 (互動升級版)</title>
     <style>
         /* A4 橫式設定 */
         @page {
@@ -64,7 +64,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             font-size: 12px;
         }
         th, td {
@@ -125,13 +125,34 @@
             text-align: center;
             color: #007bff;
         }
+        
+        /* 淨得分顯示樣式 */
+        .net-score {
+            font-weight: bold;
+            font-size: 14px;
+            color: #28a745;
+        }
+
+        /* 新增球員按鈕 */
+        .add-row-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .add-row-btn:hover { background: #218838; }
 
         /* 底部備註區 */
         .notes-section {
-            margin-top: 10px;
+            margin-top: 5px;
             font-size: 12px;
             border: 1px dashed #999;
-            padding: 10px;
+            padding: 8px 10px;
             border-radius: 4px;
             background: #fafafa;
         }
@@ -205,7 +226,7 @@
             .action-bar { display: none; }
             body { background: none; padding: 0; }
             .page-container { box-shadow: none; margin: 0; padding: 0; width: 100%; min-height: auto; }
-            .count-btn { display: none; } /* 列印時隱藏加減小按鈕，只保留數字 */
+            .count-btn, .add-row-btn { display: none; } /* 列印時隱藏加減與新增按鈕 */
         }
     </style>
 </head>
@@ -229,59 +250,31 @@
             <div>日期/時間 (DATE/TIME): <input type="text" style="width: 130px;"></div>
         </div>
 
-        <table>
+        <table id="playerTable">
             <thead>
                 <tr>
-                    <th style="width: 6%;">球衣背號<br>(NO.)</th>
-                    <th style="width: 15%;">球員姓名<br>(PLAYER)</th>
-                    <th style="width: 7%;">發球得分<br>(ACE)</th>
-                    <th style="width: 7%;">發球失誤<br>(SE)</th>
-                    <th style="width: 7%;">接球到位<br>(REC+)</th>
-                    <th style="width: 7%;">接球失誤<br>(REC-)</th>
-                    <th style="width: 7%;">攻擊得分<br>(KILL)</th>
-                    <th style="width: 8%;">攻擊失誤/攔阻<br>(ERR/BLK)</th>
-                    <th style="width: 7%;">吊球得分<br>(TIP)</th>
-                    <th style="width: 7%;">吊球失誤<br>(TIP ER)</th>
-                    <th style="width: 7%;">攔網得分<br>(BLK)</th>
-                    <th style="width: 7%;">保護成功<br>(COVER)</th>
-                    <th style="width: 10%;">其他失誤<br>(OTHER)</th>
+                    <th style="width: 5%;">背號</th>
+                    <th style="width: 13%;">球員姓名</th>
+                    <th style="width: 6%;">發球得分<br>(ACE)</th>
+                    <th style="width: 6%;">發球失誤<br>(SE)</th>
+                    <th style="width: 6%;">接球到位<br>(REC+)</th>
+                    <th style="width: 6%;">接球失誤<br>(REC-)</th>
+                    <th style="width: 6%;">攻擊得分<br>(KILL)</th>
+                    <th style="width: 7%;">攻擊失誤/攔<br>(ERR/BLK)</th>
+                    <th style="width: 6%;">吊球得分<br>(TIP)</th>
+                    <th style="width: 6%;">吊球失誤<br>(TIP ER)</th>
+                    <th style="width: 6%;">攔網得分<br>(BLK)</th>
+                    <th style="width: 6%;">保護成功<br>(COVER)</th>
+                    <th style="width: 8%;">其他失誤<br>(OTHER)</th>
+                    <th style="width: 8%;">總得失分<br>(NET)</th>
                 </tr>
             </thead>
-            <tbody>
-                <script>
-                    // 產生計數欄位的 Helper 函式
-                    function createCounterTD() {
-                        return `<td>
-                            <div class="counter-group">
-                                <button class="count-btn" onclick="changeCount(this, -1)">-</button>
-                                <span class="count-display">0</span>
-                                <button class="count-btn" onclick="changeCount(this, 1)">+</button>
-                            </div>
-                        </td>`;
-                    }
-
-                    for(let i=1; i<=10; i++) {
-                        document.write(`
-                            <tr>
-                                <td><input class="cell-input" type="text"></td>
-                                <td><input class="cell-input" type="text" style="text-align:left;"></td>
-                                ${createCounterTD()}
-                                ${createCounterTD()}
-                                ${createCounterTD()}
-                                ${createCounterTD()}
-                                ${createCounterTD()}
-                                ${createCounterTD()}
-                                ${createCounterTD()}
-                                ${createCounterTD()}
-                                ${createCounterTD()}
-                                ${createCounterTD()}
-                                <td><button class="count-btn" style="color: #d9534f; padding: 4px 8px;" onclick="addOtherError(this)">-</button></td>
-                            </tr>
-                        `);
-                    }
-                </script>
+            <tbody id="playerTableBody">
+                <!-- 初始 8 位球員列 -->
             </tbody>
         </table>
+
+        <button class="add-row-btn" onclick="addPlayerRow()">＋ 新增球員列</button>
 
         <div class="notes-section">
             <h4>其他失誤代號說明 (Other Error Notes):</h4>
@@ -396,13 +389,87 @@
     <script>
         let errorCounter = 0;
 
-        // 雙向加減計數邏輯
+        // 產生計數器欄位 HTML
+        function createCounterTD() {
+            return `<td>
+                <div class="counter-group">
+                    <button class="count-btn" onclick="changeCount(this, -1)">-</button>
+                    <span class="count-display">0</span>
+                    <button class="count-btn" onclick="changeCount(this, 1)">+</button>
+                </div>
+            </td>`;
+        }
+
+        // 動態新增一列球員
+        function addPlayerRow() {
+            let tbody = document.getElementById('playerTableBody');
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input class="cell-input" type="text"></td>
+                <td><input class="cell-input" type="text" style="text-align:left;"></td>
+                ${createCounterTD()}
+                ${createCounterTD()}
+                ${createCounterTD()}
+                ${createCounterTD()}
+                ${createCounterTD()}
+                ${createCounterTD()}
+                ${createCounterTD()}
+                ${createCounterTD()}
+                ${createCounterTD()}
+                ${createCounterTD()}
+                <td><button class="count-btn" style="color: #d9534f; padding: 4px 8px;" onclick="addOtherError(this)">-</button></td>
+                <td><span class="net-score">0</span></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        // 初始化載入 8 位球員
+        window.onload = function() {
+            for(let i=0; i<8; i++) {
+                addPlayerRow();
+            }
+        };
+
+        // 雙向加減計數邏輯並即時計算總得失分 (NET)
         function changeCount(btn, amount) {
             let displaySpan = btn.parentElement.querySelector('.count-display');
             let currentVal = parseInt(displaySpan.innerText) || 0;
             let newVal = currentVal + amount;
-            if (newVal < 0) newVal = 0; // 數值最低為 0
+            if (newVal < 0) newVal = 0;
             displaySpan.innerText = newVal;
+
+            updateNetScore(btn.closest('tr'));
+        }
+
+        // 計算該列球員的總得失分 (NET)
+        // 順向加分項：Ace(0), REC+(2), KILL(4), TIP(6), BLK(8), COVER(9) -> 依序對應 indexes
+        function updateNetScore(row) {
+            let displays = row.querySelectorAll('.count-display');
+            // 順向計分欄位索引陣列 (依序為: Ace, REC+, KILL, TIP, BLK, COVER)
+            // 根據 th 順序：0:ACE, 1:SE, 2:REC+, 3:REC-, 4:KILL, 5:ERR/BLK, 6:TIP, 7:TIP ER, 8:BLK, 9:COVER
+            let positiveIndices = [0, 2, 4, 6, 8, 9]; 
+            let negativeIndices = [1, 3, 5, 7]; // SE, REC-, ERR/BLK, TIP ER
+
+            let positiveSum = 0;
+            positiveIndices.forEach(idx => {
+                if(displays[idx]) positiveSum += parseInt(displays[idx].innerText) || 0;
+            });
+
+            let negativeSum = 0;
+            negativeIndices.forEach(idx => {
+                if(displays[idx]) negativeSum += parseInt(displays[idx].innerText) || 0;
+            });
+
+            let net = positiveSum - negativeSum;
+            let netSpan = row.querySelector('.net-score');
+            netSpan.innerText = net;
+            if (net > 0) {
+                netSpan.style.color = '#28a745'; // 綠色
+            } else if (net < 0) {
+                netSpan.style.color = '#d9534f'; // 紅色
+            } else {
+                netSpan.style.color = '#333';
+            }
         }
 
         function addOtherError(btn) {
@@ -433,13 +500,18 @@
                 const selects = document.querySelectorAll('select');
                 selects.forEach(select => select.selectedIndex = 0);
                 
-                // 重設計數器顯示為 0
                 const displays = document.querySelectorAll('.count-display');
                 displays.forEach(span => span.innerText = '0');
 
-                // 重設其他失誤按鈕
-                const errorBtns = document.querySelectorAll('td button.count-btn[style*="color: rgb(217, 83, 79)"]');
-                errorBtns.forEach(btn => btn.innerText = '-');
+                const nets = document.querySelectorAll('.net-score');
+                nets.forEach(span => { span.innerText = '0'; span.style.color = '#28a745'; });
+
+                const errorBtns = document.querySelectorAll('td button.count-btn[style*="color"]');
+                errorBtns.forEach(btn => {
+                    if(btn.style.color === 'rgb(217, 83, 79)' || btn.style.color === '#d9534f') {
+                        btn.innerText = '-';
+                    }
+                });
 
                 errorCounter = 0;
                 document.getElementById('otherNotesContainer').innerHTML = '<span style="color: #777; font-style: italic;">點擊表格中的「其他失誤」按鈕，此處將自動產生對應編號與備註欄。</span>';
