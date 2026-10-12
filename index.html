@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>排球比賽記錄表 </title>
+    <title>排球比賽記錄表</title>
     <style>
         /* A4 橫式設定 */
         @page {
@@ -165,6 +165,10 @@
             display: inline-block;
             margin-right: 15px;
             margin-bottom: 5px;
+            background: #fff;
+            padding: 3px 6px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
         }
         .note-item input {
             border: none;
@@ -172,8 +176,20 @@
             background: transparent;
             font-size: 12px;
             padding: 2px;
-            width: 180px;
+            width: 150px;
             outline: none;
+        }
+        .del-note-btn {
+            background: none;
+            border: none;
+            color: #d9534f;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .del-note-btn:hover {
+            color: #bd2130;
         }
 
         /* 雙欄並排容器 (第二頁用) */
@@ -226,7 +242,7 @@
             .action-bar { display: none; }
             body { background: none; padding: 0; }
             .page-container { box-shadow: none; margin: 0; padding: 0; width: 100%; min-height: auto; }
-            .count-btn, .add-row-btn { display: none; }
+            .count-btn, .add-row-btn, .del-note-btn { display: none; }
         }
     </style>
 </head>
@@ -446,9 +462,7 @@
 
         function updateNetScore(row) {
             let displays = row.querySelectorAll('.count-display');
-            // 順向計分欄位索引 (Ace, REC+, KILL, TIP, BLK, COVER) -> 0, 2, 4, 6, 8, 9
             let positiveIndices = [0, 2, 4, 6, 8, 9]; 
-            // 負面失誤欄位索引 (SE, REC-, ERR/BLK, TIP ER, OTHER) -> 1, 3, 5, 7, 10
             let negativeIndices = [1, 3, 5, 7, 10]; 
 
             let positiveSum = 0;
@@ -473,34 +487,75 @@
             }
         }
 
-        // 點擊 📝 按鈕時自動增加計數並在下方新增文字備註欄
+        // 點擊 📝 按鈕時自動增加計數並在下方新增文字備註欄（綁定該列作為目標）
         function addOtherError(btn) {
             errorCounter++;
-            let code = `[${errorCounter}]`;
+            let codeId = `note-item-${errorCounter}`;
+            let codeText = `[${errorCounter}]`;
 
-            // 同時讓該球員的「其他失誤」計數 +1
+            let row = btn.closest('tr');
             let counterGroup = btn.closest('.counter-group') || btn.parentElement;
             let displaySpan = counterGroup.querySelector('.count-display');
+            
+            // 讓該球員的「其他失誤」計數 +1
             if (displaySpan) {
                 let currentVal = parseInt(displaySpan.innerText) || 0;
                 displaySpan.innerText = currentVal + 1;
-                updateNetScore(btn.closest('tr'));
+                updateNetScore(row);
             }
 
-            let row = btn.closest('tr');
             let noInput = row.cells[0].querySelector('input').value || '?';
             let nameInput = row.cells[1].querySelector('input').value || '未命名';
 
             let container = document.getElementById('otherNotesContainer');
-            if(errorCounter === 1) {
+            if(errorCounter === 1 && container.querySelector('span')) {
                 container.innerHTML = '';
             }
 
+            // 建立備註項目，並把所屬的 row 資訊存進 DOM 方便刪除時扣回計數
             let div = document.createElement('div');
             div.className = 'note-item';
-            div.id = `error-note-${errorCounter}`;
-            div.innerHTML = `<strong>${code}</strong> (背號:${noInput} ${nameInput}): <input type="text" placeholder="輸入失誤原因...">`;
+            div.id = codeId;
+            div.innerHTML = `<strong>${codeText}</strong> (背號:${noInput} ${nameInput}): <input type="text" placeholder="輸入失誤原因..."><button class="del-note-btn" onclick="removeOtherError('${codeId}')" title="刪除此備註">❌</button>`;
+            
+            // 將 row 參考綁定在元素上
+            div.dataset.rowId = row.rowIndex; 
             container.appendChild(div);
+        }
+
+        // 刪除備註並自動扣除對應球員的「其他失誤」計數
+        function removeOtherError(noteId) {
+            let noteDiv = document.getElementById(noteId);
+            if (!noteDiv) return;
+
+            // 尋找對應表格中的那一列（透過儲存的 rowIndex）
+            let rowIndex = parseInt(noteDiv.dataset.rowId);
+            let table = document.getElementById('playerTable');
+            
+            if (table && table.rows[rowIndex]) {
+                let row = table.rows[rowIndex];
+                // 「其他失誤」是該列的第 13 個 td (index 12)
+                let otherTd = row.cells[12];
+                if (otherTd) {
+                    let displaySpan = otherTd.querySelector('.count-display');
+                    if (displaySpan) {
+                        let currentVal = parseInt(displaySpan.innerText) || 0;
+                        if (currentVal > 0) {
+                            displaySpan.innerText = currentVal - 1;
+                            updateNetScore(row);
+                        }
+                    }
+                }
+            }
+
+            // 移除該筆備註 DOM
+            noteDiv.remove();
+
+            // 如果全部刪光了，恢復提示文字
+            let container = document.getElementById('otherNotesContainer');
+            if (container.children.length === 0) {
+                container.innerHTML = '<span style="color: #777; font-style: italic;">點擊「其他失誤」欄位中的記事按鈕（📝），此處將自動產生對應編號與備註欄。</span>';
+            }
         }
 
         function clearForm() {
