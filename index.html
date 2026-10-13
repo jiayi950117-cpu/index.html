@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>排球比賽記錄表</title>
+    <meta property="og:title" content="排球比賽記錄表">
+    <meta property="og:description" content="排球比賽逐分記錄與個人總數據統計表">
+    <meta property="og:type" content="website">
     <style>
         /* A4 橫式設定 */
         @page {
@@ -66,7 +69,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 10px;
-            font-size: 11px; /* 稍微縮小字體以容納新增的欄位 */
+            font-size: 11px;
         }
         th, td {
             border: 1px solid #333;
@@ -346,7 +349,7 @@
             </tbody>
         </table>
 
-        <button class="add-row-btn" onclick="addPlayerRow(null); saveAllData();">＋ 新增球員列</button>
+        <button class="add-row-btn" onclick="addPlayerRow(null); updatePlayerSelectOptions(); saveAllData();">＋ 新增球員列</button>
 
         <div class="notes-section">
             <h4>其他失誤代號說明 (全場累積 Other Error Notes):</h4>
@@ -387,8 +390,8 @@
                             <th style="width: 10%;">序號</th>
                             <th style="width: 22%;">對方分數</th>
                             <th style="width: 28%;">方式</th>
-                            <th style="width: 15%;">球員</th>
-                            <th style="width: 25%;">備註</th>
+                            <th style="width: 18%;">球員</th>
+                            <th style="width: 22%;">備註</th>
                         </tr>
                     </thead>
                     <tbody id="ourTeamLogBody"></tbody>
@@ -404,8 +407,8 @@
                             <th style="width: 10%;">序號</th>
                             <th style="width: 22%;">我方分數</th>
                             <th style="width: 28%;">方式</th>
-                            <th style="width: 15%;">球員</th>
-                            <th style="width: 25%;">備註</th>
+                            <th style="width: 18%;">球員</th>
+                            <th style="width: 22%;">備註</th>
                         </tr>
                     </thead>
                     <tbody id="oppTeamLogBody"></tbody>
@@ -432,6 +435,7 @@
         window.onload = function() {
             initLogTables();
             loadFromLocalStorage(); 
+            updatePlayerSelectOptions();
             recalcAllStats();       
         };
 
@@ -461,7 +465,7 @@
                         <td><strong>${i}</strong></td>
                         <td><input class="cell-input log-opp-score" type="text" oninput="saveAllData()" placeholder=" "></td>
                         <td><select class="cell-select log-action" onchange="saveAllData(); recalcAllStats();">${actionOptions}</select></td>
-                        <td><input class="cell-input log-player-input" type="text" oninput="saveAllData(); recalcAllStats();" placeholder="背號"></td>
+                        <td><select class="cell-select log-player-select" onchange="saveAllData(); recalcAllStats();"><option value="">- 背號 -</option></select></td>
                         <td><textarea class="cell-textarea log-note" oninput="saveAllData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
                     </tr>
                 `;
@@ -470,11 +474,39 @@
                         <td><strong>${i}</strong></td>
                         <td><input class="cell-input log-our-score" type="text" oninput="saveAllData()" placeholder=" "></td>
                         <td><select class="cell-select log-action" onchange="saveAllData(); recalcAllStats();">${actionOptions}</select></td>
-                        <td><input class="cell-input log-player-input" type="text" oninput="saveAllData(); recalcAllStats();" placeholder="背號"></td>
+                        <td><select class="cell-select log-player-select" onchange="saveAllData(); recalcAllStats();"><option value="">- 背號 -</option></select></td>
                         <td><textarea class="cell-textarea log-note" oninput="saveAllData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
                     </tr>
                 `;
             }
+        }
+
+        // 當第一頁輸入/修改球員背號與姓名時，更新第二頁所有背號下拉選單
+        function updatePlayerSelectOptions() {
+            let playerRows = document.querySelectorAll('#playerTableBody tr');
+            let playerList = [];
+
+            playerRows.forEach(r => {
+                let no = r.querySelector('.player-no-input').value.trim();
+                let name = r.cells[1].querySelector('input').value.trim();
+                if (no !== '') {
+                    playerList.push({ no: no, name: name });
+                }
+            });
+
+            let selectElements = document.querySelectorAll('.log-player-select');
+            selectElements.forEach(select => {
+                let currentVal = select.value;
+                select.innerHTML = '<option value="">- 背號 -</option>';
+                playerList.forEach(p => {
+                    let label = p.name ? `${p.no} (${p.name})` : p.no;
+                    let opt = document.createElement('option');
+                    opt.value = p.no;
+                    opt.textContent = label;
+                    select.appendChild(opt);
+                });
+                select.value = currentVal; // 保留之前已選擇的值
+            });
         }
 
         function createCounterTD(val = 0) {
@@ -495,24 +527,23 @@
 
             let noVal = data && data.no !== undefined ? data.no : '';
             let nameVal = data && data.name !== undefined ? data.name : '';
-            // 總共 12 個計數器欄位 (0~11)
             let counts = data && data.counts ? data.counts : [0,0,0,0,0,0,0,0,0,0,0,0];
 
             tr.innerHTML = `
-                <td><input class="cell-input player-no-input" type="text" value="${noVal}" oninput="saveAllData(); recalcAllStats()"></td>
-                <td><input class="cell-input" type="text" value="${nameVal}" style="text-align:left;" oninput="saveAllData()"></td>
-                ${createCounterTD(counts[0])}  <!-- ACE -->
-                ${createCounterTD(counts[1])}  <!-- SE -->
-                ${createCounterTD(counts[2])}  <!-- REC+ -->
-                ${createCounterTD(counts[3])}  <!-- REC- -->
-                ${createCounterTD(counts[4])}  <!-- KILL -->
-                ${createCounterTD(counts[5])}  <!-- ERR -->
-                ${createCounterTD(counts[6])}  <!-- TIP -->
-                ${createCounterTD(counts[7])}  <!-- TIP ER -->
-                ${createCounterTD(counts[8])}  <!-- BLK -->
-                ${createCounterTD(counts[9])}  <!-- 攔網失誤 BHE -->
-                ${createCounterTD(counts[10])} <!-- COVER -->
-                ${createCounterTD(counts[11])} <!-- OTHER -->
+                <td><input class="cell-input player-no-input" type="text" value="${noVal}" oninput="updatePlayerSelectOptions(); saveAllData(); recalcAllStats()"></td>
+                <td><input class="cell-input" type="text" value="${nameVal}" style="text-align:left;" oninput="updatePlayerSelectOptions(); saveAllData()"></td>
+                ${createCounterTD(counts[0])}
+                ${createCounterTD(counts[1])}
+                ${createCounterTD(counts[2])}
+                ${createCounterTD(counts[3])}
+                ${createCounterTD(counts[4])}
+                ${createCounterTD(counts[5])}
+                ${createCounterTD(counts[6])}
+                ${createCounterTD(counts[7])}
+                ${createCounterTD(counts[8])}
+                ${createCounterTD(counts[9])}
+                ${createCounterTD(counts[10])}
+                ${createCounterTD(counts[11])}
                 <td><span class="net-score">0</span></td>
             `;
             tbody.appendChild(tr);
@@ -532,9 +563,7 @@
 
         function updateNetScore(row) {
             let displays = row.querySelectorAll('.count-display');
-            // 正分項索引：ACE(0), REC+(2), KILL(4), TIP(6), BLK(8), COVER(10)
             let positiveIndices = [0, 2, 4, 6, 8, 10]; 
-            // 負分項索引：SE(1), REC-(3), ERR(5), TIP ER(7), 攔網失誤(9), OTHER(11)
             let negativeIndices = [1, 3, 5, 7, 9, 11]; 
 
             let positiveSum = 0;
@@ -603,7 +632,7 @@
                 ourLog.push({
                     score: r.querySelector('.log-opp-score').value,
                     action: r.querySelector('.log-action').value,
-                    player: r.querySelector('.log-player-input').value,
+                    player: r.querySelector('.log-player-select').value,
                     note: r.querySelector('.log-note').value
                 });
             });
@@ -611,7 +640,7 @@
                 oppLog.push({
                     score: r.querySelector('.log-our-score').value,
                     action: r.querySelector('.log-action').value,
-                    player: r.querySelector('.log-player-input').value,
+                    player: r.querySelector('.log-player-select').value,
                     note: r.querySelector('.log-note').value
                 });
             });
@@ -641,7 +670,6 @@
             if (sData) {
                 setsData = JSON.parse(sData);
             }
-            loadSetDataToUI(activeSet);
 
             let pData = localStorage.getItem('vb_playersData');
             let tbody = document.getElementById('playerTableBody');
@@ -656,6 +684,8 @@
             } else {
                 for(let i=0; i<8; i++) addPlayerRow(null);
             }
+
+            loadSetDataToUI(activeSet);
         }
 
         function loadSetDataToUI(setNo) {
@@ -672,13 +702,13 @@
                 let dOur = data.ourLog[i] || { score: '', action: '', player: '', note: '' };
                 ourRows[i].querySelector('.log-opp-score').value = dOur.score;
                 ourRows[i].querySelector('.log-action').value = dOur.action;
-                ourRows[i].querySelector('.log-player-input').value = dOur.player;
+                ourRows[i].querySelector('.log-player-select').value = dOur.player;
                 ourRows[i].querySelector('.log-note').value = dOur.note;
 
                 let dOpp = data.oppLog[i] || { score: '', action: '', player: '', note: '' };
                 oppRows[i].querySelector('.log-our-score').value = dOpp.score;
                 oppRows[i].querySelector('.log-action').value = dOpp.action;
-                oppRows[i].querySelector('.log-player-input').value = dOpp.player;
+                oppRows[i].querySelector('.log-player-select').value = dOpp.player;
                 oppRows[i].querySelector('.log-note').value = dOpp.note;
             }
         }
@@ -756,7 +786,6 @@
                 }
             });
 
-            // 映射第一頁的欄位索引 (0:ACE, 1:SE, 2:REC+, 3:REC-, 4:KILL, 5:ERR, 6:TIP, 7:TIP ER, 8:BLK, 9:攔網失誤, 10:COVER, 11:OTHER)
             let mapping = {
                 '發球得分': 0,
                 '發球失誤': 1,
@@ -794,7 +823,7 @@
 
                 let tagDisplay = row.querySelector('.error-tag-display');
                 if (!tagDisplay) {
-                    let td = row.cells[13]; // OTHER 欄位索引
+                    let td = row.cells[13];
                     if (td && !td.querySelector('.error-tag-display')) {
                         td.innerHTML += `<div class="error-tag-display"></div>`;
                     }
@@ -831,7 +860,7 @@
         }
 
         function clearCurrentSet() {
-            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄與戰術嗎？將連帶清空第${activeSet}局之球員整場總數據統計`)) {
+            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄與戰術嗎？（第一頁的整場總成績會自動扣除本局數據）`)) {
                 setsData[activeSet] = { finalScore: "", tactics: "", ourLog: [], oppLog: [] };
                 loadSetDataToUI(activeSet);
                 recalcAllStats();
@@ -858,6 +887,7 @@
                 for(let i=0; i<8; i++) addPlayerRow(null);
 
                 initLogTables();
+                updatePlayerSelectOptions();
                 recalcAllStats();
             }
         }
