@@ -70,7 +70,7 @@
         th, td {
             border: 1px solid #333;
             text-align: center;
-            padding: 5px 4px;
+            padding: 4px 3px;
             vertical-align: middle;
         }
         th {
@@ -188,8 +188,65 @@
             font-size: 12px;
             margin-left: 5px;
         }
-        .del-note-btn:hover {
-            color: #bd2130;
+        .del-note-btn:hover { color: #bd2130; }
+
+        /* 顯示代號在格子內的樣式 */
+        .error-tag-display {
+            display: block;
+            font-size: 11px;
+            color: #d9534f;
+            font-weight: bold;
+            margin-top: 2px;
+            word-break: break-all;
+        }
+
+        /* 表格內備註支援自動換行與多行輸入 */
+        textarea.cell-textarea {
+            width: 95%;
+            height: 24px;
+            min-height: 24px;
+            border: none;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 11px;
+            text-align: left;
+            background: transparent;
+            outline: none;
+            padding: 2px;
+            line-height: 1.3;
+            vertical-align: middle;
+        }
+        textarea.cell-textarea:focus {
+            background: #fffdf0;
+            height: 50px; 
+            box-shadow: 0 0 3px rgba(0,123,255,0.5);
+            z-index: 10;
+            position: relative;
+        }
+
+        /* 第二頁專用：長篇戰術記錄與教練建議區 */
+        .long-notes-box {
+            margin-top: 8px;
+            border: 1px solid #333;
+            padding: 6px 10px;
+            border-radius: 4px;
+            background: #fff;
+        }
+        .long-notes-box h4 {
+            margin: 0 0 3px 0;
+            font-size: 12px;
+            color: #333;
+        }
+        .long-notes-textarea {
+            width: 100%;
+            height: 35px;
+            border: none;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 12px;
+            outline: none;
+            background: transparent;
+            line-height: 1.4;
         }
 
         /* 雙欄並排容器 (第二頁用) */
@@ -243,6 +300,7 @@
             body { background: none; padding: 0; }
             .page-container { box-shadow: none; margin: 0; padding: 0; width: 100%; min-height: auto; }
             .count-btn, .add-row-btn, .del-note-btn { display: none; }
+            textarea.cell-textarea, .long-notes-textarea { height: auto !important; border: none; }
         }
     </style>
 </head>
@@ -282,7 +340,7 @@
                     <th style="width: 6%;">攔網得分<br>(BLK)</th>
                     <th style="width: 6%;">保護成功<br>(COVER)</th>
                     <th style="width: 8%;">其他失誤<br>(OTHER)</th>
-                    <th style="width: 8%;">總得失分<br>(NET)</th>
+                    <th style="width: 8%;">綜合貢獻值<br>(NET)</th>
                 </tr>
             </thead>
             <tbody id="playerTableBody">
@@ -302,7 +360,7 @@
 
     <!-- 第二頁：1-30分 左右並排逐分記錄表 -->
     <div class="page-container">
-        <h1>排球比賽記錄表 - 逐分記錄表 (雙邊對抗版)</h1>
+        <h1>排球比賽記錄表 - 逐分記錄表</h1>
         <div class="subtitle">POINT-BY-POINT LOG (OUR TEAM VS OPPONENT)</div>
         
         <div class="header-info">
@@ -320,11 +378,11 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 12%;">序號</th>
-                            <th style="width: 25%;">當前比分<br>(我方 : 對方)</th>
-                            <th style="width: 31%;">得分/失分方式</th>
-                            <th style="width: 16%;">球員</th>
-                            <th style="width: 16%;">備註</th>
+                            <th style="width: 10%;">序號</th>
+                            <th style="width: 22%;">對方分數</th>
+                            <th style="width: 28%;">方式</th>
+                            <th style="width: 15%;">球員</th>
+                            <th style="width: 25%;">備註</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -333,22 +391,22 @@
                                 document.write(`
                                     <tr>
                                         <td><strong>${i}</strong></td>
-                                        <td><input class="cell-input" type="text" placeholder="例: 12 : 10"></td>
+                                        <td><input class="cell-input" type="text" placeholder=" "></td>
                                         <td>
                                             <select class="cell-select">
-                                                <option value="">- 選擇方式 -</option>
-                                                <option value="發球得分">發球得分 (Ace)</option>
-                                                <option value="攻擊得分">攻擊得分 (Kill)</option>
-                                                <option value="吊球得分">吊球得分 (Tip)</option>
-                                                <option value="攔網得分">攔網得分 (Block)</option>
-                                                <option value="對手失誤">對手失誤 (Opp. Err)</option>
-                                                <option value="發球失誤">發球失誤 (SE)</option>
-                                                <option value="攻擊失誤">攻擊失誤 (AE)</option>
-                                                <option value="接球失誤">接球失誤 (RE)</option>
+                                                <option value="">- 選擇 -</option>
+                                                <option value="發球得分">發球得分</option>
+                                                <option value="攻擊得分">攻擊得分</option>
+                                                <option value="吊球得分">吊球得分</option>
+                                                <option value="攔網得分">攔網得分</option>
+                                                <option value="對手失誤">對手失誤</option>
+                                                <option value="發球失誤">發球失誤</option>
+                                                <option value="攻擊失誤">攻擊失誤</option>
+                                                <option value="接球失誤">接球失誤</option>
                                             </select>
                                         </td>
                                         <td><input class="cell-input" type="text"></td>
-                                        <td><input class="cell-input" type="text"></td>
+                                        <td><textarea class="cell-textarea" placeholder="點此輸入..."></textarea></td>
                                     </tr>
                                 `);
                             }
@@ -363,11 +421,11 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 12%;">序號</th>
-                            <th style="width: 25%;">當前比分<br>(我方 : 對方)</th>
-                            <th style="width: 31%;">得分/失分方式</th>
-                            <th style="width: 16%;">球員</th>
-                            <th style="width: 16%;">備註</th>
+                            <th style="width: 10%;">序號</th>
+                            <th style="width: 22%;">我方分數</th>
+                            <th style="width: 28%;">方式</th>
+                            <th style="width: 15%;">球員</th>
+                            <th style="width: 25%;">備註</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -376,22 +434,22 @@
                                 document.write(`
                                     <tr>
                                         <td><strong>${i}</strong></td>
-                                        <td><input class="cell-input" type="text" placeholder="例: 10 : 12"></td>
+                                        <td><input class="cell-input" type="text" placeholder=" "></td>
                                         <td>
                                             <select class="cell-select">
-                                                <option value="">- 選擇方式 -</option>
-                                                <option value="發球得分">發球得分 (Ace)</option>
-                                                <option value="攻擊得分">攻擊得分 (Kill)</option>
-                                                <option value="吊球得分">吊球得分 (Tip)</option>
-                                                <option value="攔網得分">攔網得分 (Block)</option>
-                                                <option value="對手失誤">對手失誤 (Opp. Err)</option>
-                                                <option value="發球失誤">發球失誤 (SE)</option>
-                                                <option value="攻擊失誤">攻擊失誤 (AE)</option>
-                                                <option value="接球失誤">接球失誤 (RE)</option>
+                                                <option value="">- 選擇 -</option>
+                                                <option value="發球得分">發球得分</option>
+                                                <option value="攻擊得分">攻擊得分</option>
+                                                <option value="吊球得分">吊球得分</option>
+                                                <option value="攔網得分">攔網得分</option>
+                                                <option value="對手失誤">對手失誤</option>
+                                                <option value="發球失誤">發球失誤</option>
+                                                <option value="攻擊失誤">攻擊失誤</option>
+                                                <option value="接球失誤">接球失誤</option>
                                             </select>
                                         </td>
                                         <td><input class="cell-input" type="text"></td>
-                                        <td><input class="cell-input" type="text"></td>
+                                        <td><textarea class="cell-textarea" placeholder="點此輸入..."></textarea></td>
                                     </tr>
                                 `);
                             }
@@ -399,6 +457,12 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- 第二頁專用：長篇戰術記錄與教練建議區 -->
+        <div class="long-notes-box">
+            <h4>本局戰術記錄與教練建議 (Match Tactics & Coach Suggestions):</h4>
+            <textarea class="long-notes-textarea" placeholder="在此輸入長篇戰術調整、對手習慣、輪轉問題或教練叮嚀..."></textarea>
         </div>
     </div>
 
@@ -432,12 +496,9 @@
                 ${createCounterTD()}
                 ${createCounterTD()}
                 <td>
-                    <div class="counter-group">
-                        <button class="count-btn" onclick="changeCount(this, -1)">-</button>
-                        <span class="count-display">0</span>
-                        <button class="count-btn" onclick="changeCount(this, 1)">+</button>
-                    </div>
-                    <button class="count-btn" style="color: #d9534f; margin-left: 2px;" title="新增文字備註" onclick="addOtherError(this)">📝</button>
+                    <span class="count-display" style="display:none;">0</span>
+                    <button class="count-btn" style="color: #d9534f; padding: 3px 6px; font-weight: bold;" title="新增備註與計算失誤" onclick="addOtherError(this)">📝 記事</button>
+                    <div class="error-tag-display"></div>
                 </td>
                 <td><span class="net-score">0</span></td>
             `;
@@ -487,22 +548,26 @@
             }
         }
 
-        // 點擊 📝 按鈕時自動增加計數並在下方新增文字備註欄（綁定該列作為目標）
         function addOtherError(btn) {
             errorCounter++;
             let codeId = `note-item-${errorCounter}`;
             let codeText = `[${errorCounter}]`;
 
             let row = btn.closest('tr');
-            let counterGroup = btn.closest('.counter-group') || btn.parentElement;
-            let displaySpan = counterGroup.querySelector('.count-display');
+            let displaySpan = row.querySelectorAll('.count-display')[10]; // 其他失誤的 count-display
             
-            // 讓該球員的「其他失誤」計數 +1
             if (displaySpan) {
                 let currentVal = parseInt(displaySpan.innerText) || 0;
                 displaySpan.innerText = currentVal + 1;
                 updateNetScore(row);
             }
+
+            // 將代號追加顯示在該格的標籤容器中（不覆蓋前面的代號）
+            let tagDisplay = row.querySelector('.error-tag-display');
+            let currentTags = tagDisplay.getAttribute('data-tags') ? JSON.parse(tagDisplay.getAttribute('data-tags')) : [];
+            currentTags.push({ id: codeId, text: codeText });
+            tagDisplay.setAttribute('data-tags', JSON.stringify(currentTags));
+            tagDisplay.innerText = currentTags.map(t => t.text).join(' ');
 
             let noInput = row.cells[0].querySelector('input').value || '?';
             let nameInput = row.cells[1].querySelector('input').value || '未命名';
@@ -512,46 +577,43 @@
                 container.innerHTML = '';
             }
 
-            // 建立備註項目，並把所屬的 row 資訊存進 DOM 方便刪除時扣回計數
             let div = document.createElement('div');
             div.className = 'note-item';
             div.id = codeId;
             div.innerHTML = `<strong>${codeText}</strong> (背號:${noInput} ${nameInput}): <input type="text" placeholder="輸入失誤原因..."><button class="del-note-btn" onclick="removeOtherError('${codeId}')" title="刪除此備註">❌</button>`;
             
-            // 將 row 參考綁定在元素上
             div.dataset.rowId = row.rowIndex; 
             container.appendChild(div);
         }
 
-        // 刪除備註並自動扣除對應球員的「其他失誤」計數
         function removeOtherError(noteId) {
             let noteDiv = document.getElementById(noteId);
             if (!noteDiv) return;
 
-            // 尋找對應表格中的那一列（透過儲存的 rowIndex）
             let rowIndex = parseInt(noteDiv.dataset.rowId);
             let table = document.getElementById('playerTable');
             
             if (table && table.rows[rowIndex]) {
                 let row = table.rows[rowIndex];
-                // 「其他失誤」是該列的第 13 個 td (index 12)
-                let otherTd = row.cells[12];
-                if (otherTd) {
-                    let displaySpan = otherTd.querySelector('.count-display');
-                    if (displaySpan) {
-                        let currentVal = parseInt(displaySpan.innerText) || 0;
-                        if (currentVal > 0) {
-                            displaySpan.innerText = currentVal - 1;
-                            updateNetScore(row);
-                        }
+                let displaySpan = row.querySelectorAll('.count-display')[10]; // 其他失誤的 count-display
+                if (displaySpan) {
+                    let currentVal = parseInt(displaySpan.innerText) || 0;
+                    if (currentVal > 0) {
+                        displaySpan.innerText = currentVal - 1;
+                        updateNetScore(row);
                     }
                 }
+
+                // 同時從該格的標籤中移除對應代號
+                let tagDisplay = row.querySelector('.error-tag-display');
+                let currentTags = tagDisplay.getAttribute('data-tags') ? JSON.parse(tagDisplay.getAttribute('data-tags')) : [];
+                currentTags = currentTags.filter(t => t.id !== noteId);
+                tagDisplay.setAttribute('data-tags', JSON.stringify(currentTags));
+                tagDisplay.innerText = currentTags.map(t => t.text).join(' ');
             }
 
-            // 移除該筆備註 DOM
             noteDiv.remove();
 
-            // 如果全部刪光了，恢復提示文字
             let container = document.getElementById('otherNotesContainer');
             if (container.children.length === 0) {
                 container.innerHTML = '<span style="color: #777; font-style: italic;">點擊「其他失誤」欄位中的記事按鈕（📝），此處將自動產生對應編號與備註欄。</span>';
@@ -562,11 +624,16 @@
             if(confirm("確定要清空所有填寫的內容嗎？")) {
                 const inputs = document.querySelectorAll('input[type="text"]');
                 inputs.forEach(input => input.value = '');
+                const textareas = document.querySelectorAll('textarea');
+                textareas.forEach(ta => ta.value = '');
                 const selects = document.querySelectorAll('select');
                 selects.forEach(select => select.selectedIndex = 0);
                 
                 const displays = document.querySelectorAll('.count-display');
                 displays.forEach(span => span.innerText = '0');
+
+                const tagDisplays = document.querySelectorAll('.error-tag-display');
+                tagDisplays.forEach(td => { td.innerText = ''; td.removeAttribute('data-tags'); });
 
                 const nets = document.querySelectorAll('.net-score');
                 nets.forEach(span => { span.innerText = '0'; span.style.color = '#28a745'; });
