@@ -51,13 +51,14 @@
             align-items: center;
             gap: 5px;
         }
-        .header-info input {
+        .header-info input, .header-info select {
             border: none;
             border-bottom: 1px solid #333;
             font-family: inherit;
             padding: 2px 5px;
             font-size: 13px;
             outline: none;
+            background: transparent;
         }
         
         /* 表格樣式 */
@@ -294,6 +295,8 @@
         .btn:hover { background: #0056b3; }
         .btn-print { background: #28a745; }
         .btn-print:hover { background: #218838; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-warning:hover { background: #e0a800; }
 
         /* 列印優化 */
         @media print {
@@ -309,14 +312,15 @@
 
     <!-- 浮動按鈕 -->
     <div class="action-bar">
-        <button class="btn" onclick="clearForm()">清空所有內容</button>
+        <button class="btn btn-warning" onclick="clearCurrentSet()">清空本局逐分記錄</button>
+        <button class="btn" onclick="clearAllData()">全部重設</button>
         <button class="btn btn-print" onclick="window.print()">列印 / 輸出 PDF</button>
     </div>
 
-    <!-- 第一頁：球員個人數據統計表 -->
+    <!-- 第一頁：球員個人總數據統計表 (整場累積) -->
     <div class="page-container">
-        <h1>排球比賽記錄表 - 球員個人數據統計</h1>
-        <div class="subtitle">VOLLEYBALL MATCH RECORD SHEET (PLAYER STATISTICS)</div>
+        <h1>排球比賽記錄表 - 球員整場總數據統計 (全場累積)</h1>
+        <div class="subtitle">VOLLEYBALL MATCH RECORD SHEET (TOTAL CUMULATIVE STATISTICS)</div>
         
         <div class="header-info">
             <div>隊伍 (TEAM): <input type="text" style="width: 150px;"></div>
@@ -352,24 +356,32 @@
         <button class="add-row-btn" onclick="addPlayerRow()">＋ 新增球員列</button>
 
         <div class="notes-section">
-            <h4>其他失誤代號說明 (Other Error Notes):</h4>
+            <h4>其他失誤代號說明 (全場累積 Other Error Notes):</h4>
             <div id="otherNotesContainer">
                 <span style="color: #777; font-style: italic;">點擊「其他失誤」欄位中的記事按鈕（📝），此處將自動產生對應編號與備註欄。</span>
             </div>
         </div>
     </div>
 
-    <!-- 第二頁：1-30分 左右並排逐分記錄表 -->
+    <!-- 第二頁：逐分記錄表 (可透過上方下拉選單切換第 1 局、第 2 局、第 3 局) -->
     <div class="page-container">
         <h1>排球比賽記錄表 - 逐分記錄表</h1>
         <div class="subtitle">POINT-BY-POINT LOG (OUR TEAM VS OPPONENT)</div>
         
         <div class="header-info">
-            <div>隊伍 (TEAM): <input type="text" style="width: 140px;"></div>
-            <div>對手 (VS): <input type="text" style="width: 140px;"></div>
-            <div>日期 (DATE): <input type="text" style="width: 100px;"></div>
-            <div>局數 (SET NO.): <input type="text" style="width: 60px;"></div>
-            <div>本局最終比分: <input type="text" style="width: 80px;"></div>
+            <div>隊伍 (TEAM): <input type="text" style="width: 120px;"></div>
+            <div>對手 (VS): <input type="text" style="width: 120px;"></div>
+            <div>
+                <strong>目前記錄局數:</strong> 
+                <select id="currentSetSelect" onchange="switchSet(this.value)" style="font-weight: bold; color: #007bff; font-size: 14px;">
+                    <option value="1">第 1 局 (Set 1)</option>
+                    <option value="2">第 2 局 (Set 2)</option>
+                    <option value="3">第 3 局 (Set 3)</option>
+                    <option value="4">第 4 局 (Set 4)</option>
+                    <option value="5">第 5 局 (Set 5)</option>
+                </select>
+            </div>
+            <div>本局最終比分: <input type="text" style="width: 70px;"></div>
         </div>
 
         <div class="dual-tables">
@@ -386,32 +398,8 @@
                             <th style="width: 25%;">備註</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <script>
-                            for(let i=1; i<=30; i++) {
-                                document.write(`
-                                    <tr>
-                                        <td><strong>${i}</strong></td>
-                                        <td><input class="cell-input" type="text" placeholder=" "></td>
-                                        <td>
-                                            <select class="cell-select" onchange="syncPlayerStat()">
-                                                <option value="">- 選擇 -</option>
-                                                <option value="發球得分">發球得分</option>
-                                                <option value="攻擊得分">攻擊得分</option>
-                                                <option value="吊球得分">吊球得分</option>
-                                                <option value="攔網得分">攔網得分</option>
-                                                <option value="對手失誤">對手失誤</option>
-                                                <option value="發球失誤">發球失誤</option>
-                                                <option value="攻擊失誤">攻擊失誤</option>
-                                                <option value="接球失誤">接球失誤</option>
-                                            </select>
-                                        </td>
-                                        <td><input class="cell-input log-player-input" type="text" oninput="syncPlayerStat()" placeholder="背號"></td>
-                                        <td><textarea class="cell-textarea" placeholder="點此輸入..."></textarea></td>
-                                    </tr>
-                                `);
-                            }
-                        </script>
+                    <tbody id="ourTeamLogBody">
+                        <!-- 動態產生 30 分記錄列 -->
                     </tbody>
                 </table>
             </div>
@@ -429,32 +417,8 @@
                             <th style="width: 25%;">備註</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <script>
-                            for(let i=1; i<=30; i++) {
-                                document.write(`
-                                    <tr>
-                                        <td><strong>${i}</strong></td>
-                                        <td><input class="cell-input" type="text" placeholder=" "></td>
-                                        <td>
-                                            <select class="cell-select" onchange="syncPlayerStat()">
-                                                <option value="">- 選擇 -</option>
-                                                <option value="發球得分">發球得分</option>
-                                                <option value="攻擊得分">攻擊得分</option>
-                                                <option value="吊球得分">吊球得分</option>
-                                                <option value="攔網得分">攔網得分</option>
-                                                <option value="對手失誤">對手失誤</option>
-                                                <option value="發球失誤">發球失誤</option>
-                                                <option value="攻擊失誤">攻擊失誤</option>
-                                                <option value="接球失誤">接球失誤</option>
-                                            </select>
-                                        </td>
-                                        <td><input class="cell-input log-player-input" type="text" oninput="syncPlayerStat()" placeholder="背號"></td>
-                                        <td><textarea class="cell-textarea" placeholder="點此輸入..."></textarea></td>
-                                    </tr>
-                                `);
-                            }
-                        </script>
+                    <tbody id="oppTeamLogBody">
+                        <!-- 動態產生 30 分記錄列 -->
                     </tbody>
                 </table>
             </div>
@@ -462,13 +426,84 @@
 
         <!-- 第二頁專用：長篇戰術記錄與教練建議區 -->
         <div class="long-notes-box">
-            <h4>本局戰術記錄與教練建議 (Match Tactics & Coach Suggestions):</h4>
-            <textarea class="long-notes-textarea" placeholder="在此輸入長篇戰術調整、對手習慣、輪轉問題或教練叮嚀..."></textarea>
+            <h4>本局戰術記錄與教練建議 (Match Tactics & Coach Suggestions - 當前局數):</h4>
+            <textarea id="setNotesTextarea" class="long-notes-textarea" oninput="saveCurrentSetData()" placeholder="在此輸入本局長篇戰術調整、對手習慣、輪轉問題或教練叮嚀..."></textarea>
         </div>
     </div>
 
     <script>
+        // 資料結構：儲存每一局的逐分記錄資料
+        // setsData[1] = { ourLog: [...], oppLog: [...], tactics: "..." }
+        let setsData = {
+            1: { ourLog: [], oppLog: [], tactics: "" },
+            2: { ourLog: [], oppLog: [], tactics: "" },
+            3: { ourLog: [], oppLog: [], tactics: "" },
+            4: { ourLog: [], oppLog: [], tactics: "" },
+            5: { ourLog: [], oppLog: [], tactics: "" }
+        };
+        let activeSet = 1;
         let noteUniqueCounter = 0;
+
+        // 初始化表格與生成 30 行逐分記錄
+        window.onload = function() {
+            for(let i=0; i<8; i++) {
+                addPlayerRow();
+            }
+            initLogTables();
+            loadSetData(1);
+        };
+
+        function initLogTables() {
+            let ourTbody = document.getElementById('ourTeamLogBody');
+            let oppTbody = document.getElementById('oppTeamLogBody');
+            ourTbody.innerHTML = '';
+            oppTbody.innerHTML = '';
+
+            for(let i=1; i<=30; i++) {
+                ourTbody.innerHTML += `
+                    <tr>
+                        <td><strong>${i}</strong></td>
+                        <td><input class="cell-input log-opp-score" type="text" oninput="saveCurrentSetData()" placeholder=" "></td>
+                        <td>
+                            <select class="cell-select log-action" onchange="saveCurrentSetData(); recalcAllStats();">
+                                <option value="">- 選擇 -</option>
+                                <option value="發球得分">發球得分</option>
+                                <option value="攻擊得分">攻擊得分</option>
+                                <option value="吊球得分">吊球得分</option>
+                                <option value="攔網得分">攔網得分</option>
+                                <option value="對手失誤">對手失誤</option>
+                                <option value="發球失誤">發球失誤</option>
+                                <option value="攻擊失誤">攻擊失誤</option>
+                                <option value="接球失誤">接球失誤</option>
+                            </select>
+                        </td>
+                        <td><input class="cell-input log-player-input" type="text" oninput="saveCurrentSetData(); recalcAllStats();" placeholder="背號"></td>
+                        <td><textarea class="cell-textarea log-note" oninput="saveCurrentSetData()" placeholder="點此輸入..."></textarea></td>
+                    </tr>
+                `;
+                oppTbody.innerHTML += `
+                    <tr>
+                        <td><strong>${i}</strong></td>
+                        <td><input class="cell-input log-our-score" type="text" oninput="saveCurrentSetData()" placeholder=" "></td>
+                        <td>
+                            <select class="cell-select log-action" onchange="saveCurrentSetData(); recalcAllStats();">
+                                <option value="">- 選擇 -</option>
+                                <option value="發球得分">發球得分</option>
+                                <option value="攻擊得分">攻擊得分</option>
+                                <option value="吊球得分">吊球得分</option>
+                                <option value="攔網得分">攔網得分</option>
+                                <option value="對手失誤">對手失誤</option>
+                                <option value="發球失誤">發球失誤</option>
+                                <option value="攻擊失誤">攻擊失誤</option>
+                                <option value="接球失誤">接球失誤</option>
+                            </select>
+                        </td>
+                        <td><input class="cell-input log-player-input" type="text" oninput="saveCurrentSetData(); recalcAllStats();" placeholder="背號"></td>
+                        <td><textarea class="cell-textarea log-note" oninput="saveCurrentSetData()" placeholder="點此輸入..."></textarea></td>
+                    </tr>
+                `;
+            }
+        }
 
         function createCounterTD() {
             return `<td>
@@ -487,7 +522,7 @@
             tr.dataset.rowUniqueId = rowUniqueId;
 
             tr.innerHTML = `
-                <td><input class="cell-input player-no-input" type="text" oninput="syncPlayerStat()"></td>
+                <td><input class="cell-input player-no-input" type="text" oninput="recalcAllStats()"></td>
                 <td><input class="cell-input" type="text" style="text-align:left;"></td>
                 ${createCounterTD()}
                 ${createCounterTD()}
@@ -508,12 +543,6 @@
             `;
             tbody.appendChild(tr);
         }
-
-        window.onload = function() {
-            for(let i=0; i<8; i++) {
-                addPlayerRow();
-            }
-        };
 
         function changeCount(btn, amount) {
             let displaySpan = btn.parentElement.querySelector('.count-display');
@@ -552,48 +581,104 @@
             }
         }
 
-        // 核心連動邏輯：第二頁 8 個選項 $\rightarrow$ 自動加總到第一頁對應背號球員的計數器中
-        function syncPlayerStat() {
+        // --- 局數切換與資料暫存機制 ---
+        function switchSet(setNo) {
+            saveCurrentSetData(); // 切換前先存好當前局數
+            activeSet = parseInt(setNo);
+            loadSetData(activeSet); // 載入新局數的逐分記錄
+            recalcAllStats(); // 重新計算總表
+        }
+
+        function saveCurrentSetData() {
+            let ourRows = document.querySelectorAll('#ourTeamLogBody tr');
+            let oppRows = document.querySelectorAll('#oppTeamLogBody tr');
+            
+            let ourLog = [];
+            let oppLog = [];
+
+            ourRows.forEach(r => {
+                ourLog.push({
+                    score: r.querySelector('.log-opp-score').value,
+                    action: r.querySelector('.log-action').value,
+                    player: r.querySelector('.log-player-input').value,
+                    note: r.querySelector('.log-note').value
+                });
+            });
+
+            oppRows.forEach(r => {
+                oppLog.push({
+                    score: r.querySelector('.log-our-score').value,
+                    action: r.querySelector('.log-action').value,
+                    player: r.querySelector('.log-player-input').value,
+                    note: r.querySelector('.log-note').value
+                });
+            });
+
+            let tactics = document.getElementById('setNotesTextarea').value;
+
+            setsData[activeSet] = { ourLog, oppLog, tactics };
+        }
+
+        function loadSetData(setNo) {
+            let data = setsData[setNo];
+            let ourRows = document.querySelectorAll('#ourTeamLogBody tr');
+            let oppRows = document.querySelectorAll('#oppTeamLogBody tr');
+
+            for(let i=0; i<30; i++) {
+                let dOur = data.ourLog[i] || { score: '', action: '', player: '', note: '' };
+                ourRows[i].querySelector('.log-opp-score').value = dOur.score;
+                ourRows[i].querySelector('.log-action').value = dOur.action;
+                ourRows[i].querySelector('.log-player-input').value = dOur.player;
+                ourRows[i].querySelector('.log-note').value = dOur.note;
+
+                let dOpp = data.oppLog[i] || { score: '', action: '', player: '', note: '' };
+                oppRows[i].querySelector('.log-our-score').value = dOpp.score;
+                oppRows[i].querySelector('.log-action').value = dOpp.action;
+                oppRows[i].querySelector('.log-player-input').value = dOpp.player;
+                oppRows[i].querySelector('.log-note').value = dOpp.note;
+            }
+
+            document.getElementById('setNotesTextarea').value = data.tactics || '';
+        }
+
+        // --- 跨局總表自動累加核心邏輯 ---
+        function recalcAllStats() {
+            saveCurrentSetData(); // 確保最新狀態被捕捉
+
             let table = document.getElementById('playerTable');
             if (!table) return;
 
             let rows = table.querySelectorAll('tbody tr');
             
-            // 1. 先統計第二頁中，各個背號所獲得的各項次數
-            let autoCounts = {}; 
+            // 統計所有局數（1到5局）中，各個背號的累積次數
+            let totalAutoCounts = {}; 
 
-            let logTables = document.querySelectorAll('.column-box table');
-            logTables.forEach(logTable => {
-                let logRows = logTable.querySelectorAll('tbody tr');
-                logRows.forEach(logRow => {
-                    let select = logRow.querySelector('.cell-select');
-                    let playerInput = logRow.querySelector('.log-player-input');
+            for (let s = 1; s <= 5; s++) {
+                let sData = setsData[s];
+                if (!sData) continue;
 
-                    if (select && playerInput) {
-                        let action = select.value;
-                        let pNo = playerInput.value.trim();
-
-                        if (action && pNo !== '') {
-                            if (!autoCounts[pNo]) {
-                                autoCounts[pNo] = { 
-                                    '發球得分': 0, 
-                                    '發球失誤': 0, 
-                                    '接球失誤': 0, 
-                                    '攻擊得分': 0, 
-                                    '攻擊失誤': 0, 
-                                    '吊球得分': 0, 
-                                    '攔網得分': 0 
-                                };
-                            }
-                            if (autoCounts[pNo][action] !== undefined) {
-                                autoCounts[pNo][action]++;
-                            }
-                        }
+                // 統計我方記錄
+                sData.ourLog.forEach(item => {
+                    let pNo = item.player.trim();
+                    let action = item.action;
+                    if (action && pNo !== '') {
+                        if (!totalAutoCounts[pNo]) totalAutoCounts[pNo] = getEmptyCountObj();
+                        if (totalAutoCounts[pNo][action] !== undefined) totalAutoCounts[pNo][action]++;
                     }
                 });
-            });
 
-            // 2. 對應到第一頁欄位 (0:ACE, 1:SE, 3:REC-, 4:KILL, 5:ERR/BLK, 6:TIP, 8:BLK)
+                // 統計對方記錄（若對方記錄中有我方球員動作）
+                sData.oppLog.forEach(item => {
+                    let pNo = item.player.trim();
+                    let action = item.action;
+                    if (action && pNo !== '') {
+                        if (!totalAutoCounts[pNo]) totalAutoCounts[pNo] = getEmptyCountObj();
+                        if (totalAutoCounts[pNo][action] !== undefined) totalAutoCounts[pNo][action]++;
+                    }
+                });
+            }
+
+            // 對應到第一頁欄位索引 (0:ACE, 1:SE, 3:REC-, 4:KILL, 5:ERR/BLK, 6:TIP, 8:BLK)
             let mapping = {
                 '發球得分': 0,
                 '發球失誤': 1,
@@ -604,21 +689,20 @@
                 '攔網得分': 8
             };
 
-            // 3. 更新第一頁各列數據並即時計算 NET
+            // 更新第一頁總表各列數據
             rows.forEach(row => {
                 let noInput = row.querySelector('.player-no-input');
                 let playerNo = noInput ? noInput.value.trim() : '';
                 let displays = row.querySelectorAll('.count-display');
 
-                if (playerNo !== '' && autoCounts[playerNo]) {
+                if (playerNo !== '' && totalAutoCounts[playerNo]) {
                     for (let action in mapping) {
                         let idx = mapping[action];
                         if (displays[idx]) {
-                            displays[idx].innerText = autoCounts[playerNo][action] || 0;
+                            displays[idx].innerText = totalAutoCounts[playerNo][action] || 0;
                         }
                     }
                 } else {
-                    // 若第二頁無該球員記錄，將自動連動項歸零（手動項 REC+, COVER, OTHER 不受影響）
                     for (let action in mapping) {
                         let idx = mapping[action];
                         if (displays[idx]) {
@@ -631,6 +715,19 @@
             });
         }
 
+        function getEmptyCountObj() {
+            return { 
+                '發球得分': 0, 
+                '發球失誤': 0, 
+                '接球失誤': 0, 
+                '攻擊得分': 0, 
+                '攻擊失誤': 0, 
+                '吊球得分': 0, 
+                '攔網得分': 0 
+            };
+        }
+
+        // --- 其他失誤記事與遞補 ---
         function addOtherError(btn) {
             noteUniqueCounter++;
             let noteId = `note-item-${noteUniqueCounter}`;
@@ -660,7 +757,6 @@
             div.innerHTML = `<strong><span class="note-num-text"></span></strong> (背號:${noInput} ${nameInput}): <input type="text" placeholder="輸入失誤原因..."><button class="del-note-btn" onclick="removeOtherError('${noteId}')" title="刪除此備註">❌</button>`;
             
             container.appendChild(div);
-
             renumberNotes();
         }
 
@@ -693,7 +789,6 @@
             }
 
             noteDiv.remove();
-
             renumberNotes();
 
             let container = document.getElementById('otherNotesContainer');
@@ -740,8 +835,26 @@
             }
         }
 
-        function clearForm() {
-            if(confirm("確定要清空所有填寫的內容嗎？")) {
+        // --- 清空控制 ---
+        function clearCurrentSet() {
+            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄嗎？（第一頁的整場總成績會自動扣除本局數據）`)) {
+                setsData[activeSet] = { ourLog: [], oppLog: [], tactics: "" };
+                loadSetData(activeSet);
+                recalcAllStats();
+            }
+        }
+
+        function clearAllData() {
+            if(confirm("警告：這將會清空整場比賽所有局數的記錄以及第一頁的球員總統計！確定要全部重設嗎？")) {
+                setsData = {
+                    1: { ourLog: [], oppLog: [], tactics: "" },
+                    2: { ourLog: [], oppLog: [], tactics: "" },
+                    3: { ourLog: [], oppLog: [], tactics: "" },
+                    4: { ourLog: [], oppLog: [], tactics: "" },
+                    5: { ourLog: [], oppLog: [], tactics: "" }
+                };
+                loadSetData(activeSet);
+
                 const inputs = document.querySelectorAll('input[type="text"]');
                 inputs.forEach(input => input.value = '');
                 const textareas = document.querySelectorAll('textarea');
