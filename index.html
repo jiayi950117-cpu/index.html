@@ -66,12 +66,12 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 10px;
-            font-size: 12px;
+            font-size: 11px; /* 稍微縮小字體以容納新增的欄位 */
         }
         th, td {
             border: 1px solid #333;
             text-align: center;
-            padding: 4px 3px;
+            padding: 4px 2px;
             vertical-align: middle;
         }
         th {
@@ -82,7 +82,7 @@
             width: 90%;
             border: none;
             text-align: center;
-            font-size: 12px;
+            font-size: 11px;
             background: transparent;
             outline: none;
         }
@@ -100,16 +100,16 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 2px;
+            gap: 1px;
         }
         .count-btn {
             background: #f8f9fa;
             border: 1px solid #ccc;
             border-radius: 3px;
-            padding: 2px 5px;
+            padding: 2px 4px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 10px;
             color: #555;
             transition: all 0.1s;
         }
@@ -120,8 +120,8 @@
         }
         .count-display {
             font-weight: bold;
-            font-size: 13px;
-            min-width: 20px;
+            font-size: 12px;
+            min-width: 16px;
             display: inline-block;
             text-align: center;
             color: #007bff;
@@ -130,7 +130,7 @@
         /* 淨得分顯示樣式 */
         .net-score {
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
             color: #28a745;
         }
 
@@ -184,7 +184,7 @@
         /* 顯示代號在格子內的樣式 */
         .error-tag-display {
             display: block;
-            font-size: 11px;
+            font-size: 10px;
             color: #d9534f;
             font-weight: bold;
             margin-top: 2px;
@@ -324,20 +324,21 @@
         <table id="playerTable">
             <thead>
                 <tr>
-                    <th style="width: 5%;">背號</th>
-                    <th style="width: 13%;">球員姓名</th>
-                    <th style="width: 6%;">發球得分<br>(ACE)</th>
-                    <th style="width: 6%;">發球失誤<br>(SE)</th>
-                    <th style="width: 6%;">接球到位<br>(REC+)</th>
-                    <th style="width: 6%;">接球失誤<br>(REC-)</th>
-                    <th style="width: 6%;">攻擊得分<br>(KILL)</th>
-                    <th style="width: 7%;">攻擊失誤/攔<br>(ERR/BLK)</th>
-                    <th style="width: 6%;">吊球得分<br>(TIP)</th>
-                    <th style="width: 6%;">吊球失誤<br>(TIP ER)</th>
-                    <th style="width: 6%;">攔網得分<br>(BLK)</th>
-                    <th style="width: 6%;">保護成功<br>(COVER)</th>
-                    <th style="width: 8%;">其他失誤<br>(OTHER)</th>
-                    <th style="width: 8%;">綜合貢獻值<br>(NET)</th>
+                    <th style="width: 4%;">背號</th>
+                    <th style="width: 11%;">球員姓名</th>
+                    <th style="width: 5%;">發球得分<br>(ACE)</th>
+                    <th style="width: 5%;">發球失誤<br>(SE)</th>
+                    <th style="width: 5%;">接球到位<br>(REC+)</th>
+                    <th style="width: 5%;">接球失誤<br>(REC-)</th>
+                    <th style="width: 5%;">攻擊得分<br>(KILL)</th>
+                    <th style="width: 6%;">攻擊失誤<br>(ERR)</th>
+                    <th style="width: 5%;">吊球得分<br>(TIP)</th>
+                    <th style="width: 5%;">吊球失誤<br>(TIP ER)</th>
+                    <th style="width: 5%;">攔網得分<br>(BLK)</th>
+                    <th style="width: 5%;">攔網失誤<br>(BHE)</th>
+                    <th style="width: 5%;">保護成功<br>(COVER)</th>
+                    <th style="width: 7%;">其他失誤<br>(OTHER)</th>
+                    <th style="width: 7%;">綜合貢獻值<br>(NET)</th>
                 </tr>
             </thead>
             <tbody id="playerTableBody">
@@ -345,7 +346,7 @@
             </tbody>
         </table>
 
-        <button class="add-row-btn" onclick="addPlayerRow(null)">＋ 新增球員列</button>
+        <button class="add-row-btn" onclick="addPlayerRow(null); saveAllData();">＋ 新增球員列</button>
 
         <div class="notes-section">
             <h4>其他失誤代號說明 (全場累積 Other Error Notes):</h4>
@@ -430,8 +431,8 @@
 
         window.onload = function() {
             initLogTables();
-            loadFromLocalStorage();
-            recalcAllStats();
+            loadFromLocalStorage(); 
+            recalcAllStats();       
         };
 
         function initLogTables() {
@@ -450,6 +451,7 @@
                 <option value="發球失誤">發球失誤</option>
                 <option value="攻擊失誤">攻擊失誤</option>
                 <option value="接球失誤">接球失誤</option>
+                <option value="攔網失誤">攔網失誤</option>
                 <option value="其他失誤">其他失誤</option>
             `;
 
@@ -493,22 +495,24 @@
 
             let noVal = data && data.no !== undefined ? data.no : '';
             let nameVal = data && data.name !== undefined ? data.name : '';
-            let counts = data && data.counts ? data.counts : [0,0,0,0,0,0,0,0,0,0,0];
+            // 總共 12 個計數器欄位 (0~11)
+            let counts = data && data.counts ? data.counts : [0,0,0,0,0,0,0,0,0,0,0,0];
 
             tr.innerHTML = `
                 <td><input class="cell-input player-no-input" type="text" value="${noVal}" oninput="saveAllData(); recalcAllStats()"></td>
                 <td><input class="cell-input" type="text" value="${nameVal}" style="text-align:left;" oninput="saveAllData()"></td>
-                ${createCounterTD(counts[0])}
-                ${createCounterTD(counts[1])}
-                ${createCounterTD(counts[2])}
-                ${createCounterTD(counts[3])}
-                ${createCounterTD(counts[4])}
-                ${createCounterTD(counts[5])}
-                ${createCounterTD(counts[6])}
-                ${createCounterTD(counts[7])}
-                ${createCounterTD(counts[8])}
-                ${createCounterTD(counts[9])}
-                ${createCounterTD(counts[10])}
+                ${createCounterTD(counts[0])}  <!-- ACE -->
+                ${createCounterTD(counts[1])}  <!-- SE -->
+                ${createCounterTD(counts[2])}  <!-- REC+ -->
+                ${createCounterTD(counts[3])}  <!-- REC- -->
+                ${createCounterTD(counts[4])}  <!-- KILL -->
+                ${createCounterTD(counts[5])}  <!-- ERR -->
+                ${createCounterTD(counts[6])}  <!-- TIP -->
+                ${createCounterTD(counts[7])}  <!-- TIP ER -->
+                ${createCounterTD(counts[8])}  <!-- BLK -->
+                ${createCounterTD(counts[9])}  <!-- 攔網失誤 BHE -->
+                ${createCounterTD(counts[10])} <!-- COVER -->
+                ${createCounterTD(counts[11])} <!-- OTHER -->
                 <td><span class="net-score">0</span></td>
             `;
             tbody.appendChild(tr);
@@ -528,8 +532,10 @@
 
         function updateNetScore(row) {
             let displays = row.querySelectorAll('.count-display');
-            let positiveIndices = [0, 2, 4, 6, 8, 9]; 
-            let negativeIndices = [1, 3, 5, 7, 10]; 
+            // 正分項索引：ACE(0), REC+(2), KILL(4), TIP(6), BLK(8), COVER(10)
+            let positiveIndices = [0, 2, 4, 6, 8, 10]; 
+            // 負分項索引：SE(1), REC-(3), ERR(5), TIP ER(7), 攔網失誤(9), OTHER(11)
+            let negativeIndices = [1, 3, 5, 7, 9, 11]; 
 
             let positiveSum = 0;
             positiveIndices.forEach(idx => {
@@ -631,6 +637,12 @@
                 document.getElementById('setVs').value = info.setVs || '';
             }
 
+            let sData = localStorage.getItem('vb_setsData');
+            if (sData) {
+                setsData = JSON.parse(sData);
+            }
+            loadSetDataToUI(activeSet);
+
             let pData = localStorage.getItem('vb_playersData');
             let tbody = document.getElementById('playerTableBody');
             tbody.innerHTML = '';
@@ -644,12 +656,6 @@
             } else {
                 for(let i=0; i<8; i++) addPlayerRow(null);
             }
-
-            let sData = localStorage.getItem('vb_setsData');
-            if (sData) {
-                setsData = JSON.parse(sData);
-            }
-            loadSetDataToUI(activeSet);
         }
 
         function loadSetDataToUI(setNo) {
@@ -677,7 +683,7 @@
             }
         }
 
-        // --- 核心：跨局總表自動連動計算 ---
+        // --- 核心：跨局總表自動連動計算與備註同步 ---
         function recalcAllStats() {
             let table = document.getElementById('playerTable');
             if (!table) return;
@@ -686,7 +692,6 @@
             let totalAutoCounts = {}; 
             let otherErrorItems = []; 
 
-            // 1. 跨局掃描所有第二頁下記錄的數據
             for (let s = 1; s <= 5; s++) {
                 let sData = setsData[s];
                 if (!sData) continue;
@@ -716,7 +721,6 @@
                 processLog(sData.oppLog);
             }
 
-            // 2. 更新第一頁下方其他失誤代號說明區
             let container = document.getElementById('otherNotesContainer');
             if (otherErrorItems.length === 0) {
                 container.innerHTML = '<span style="color: #777; font-style: italic;">當透過第二頁選取「其他失誤」時，此處將自動產生對應編號與備註內容。</span>';
@@ -724,15 +728,18 @@
                 container.innerHTML = '';
             }
 
+            let rowTagsMap = {};
             otherErrorItems.forEach((errItem, index) => {
                 let newNum = index + 1;
                 let formattedNum = `[${newNum}]`;
                 let pNo = errItem.playerNo;
 
+                let targetRow = null;
                 let playerName = '未命名';
                 rows.forEach(r => {
                     let noIn = r.querySelector('.player-no-input');
                     if (noIn && noIn.value.trim() === pNo) {
+                        targetRow = r;
                         playerName = r.cells[1].querySelector('input').value || '未命名';
                     }
                 });
@@ -741,9 +748,15 @@
                 div.className = 'note-item';
                 div.innerHTML = `<strong>${formattedNum}</strong> (背號:${pNo} ${playerName}): <input type="text" value="${errItem.noteText}" readonly style="width:180px;">`;
                 container.appendChild(div);
+
+                if (targetRow) {
+                    let rUid = targetRow.dataset.rowUniqueId;
+                    if (!rowTagsMap[rUid]) rowTagsMap[rUid] = [];
+                    rowTagsMap[rUid].push(formattedNum);
+                }
             });
 
-            // 3. 對應第一頁欄位索引 (0:ACE, 1:SE, 3:REC-, 4:KILL, 5:ERR/BLK, 6:TIP, 8:BLK, 10:OTHER)
+            // 映射第一頁的欄位索引 (0:ACE, 1:SE, 2:REC+, 3:REC-, 4:KILL, 5:ERR, 6:TIP, 7:TIP ER, 8:BLK, 9:攔網失誤, 10:COVER, 11:OTHER)
             let mapping = {
                 '發球得分': 0,
                 '發球失誤': 1,
@@ -751,29 +764,48 @@
                 '攻擊得分': 4,
                 '攻擊失誤': 5,
                 '吊球得分': 6,
+                '吊球失誤': 7,
                 '攔網得分': 8,
-                '其他失誤': 10
+                '攔網失誤': 9,
+                '其他失誤': 11
             };
 
-            // 寫回第一頁表格 `.count-display` 格子內
             rows.forEach(row => {
                 let noInput = row.querySelector('.player-no-input');
                 let playerNo = noInput ? noInput.value.trim() : '';
                 let displays = row.querySelectorAll('.count-display');
+                let rUid = row.dataset.rowUniqueId;
 
                 if (playerNo !== '' && totalAutoCounts[playerNo]) {
                     for (let action in mapping) {
                         let idx = mapping[action];
-                        if (displays[idx]) {
+                        if (displays[idx] && action !== '其他失誤') {
                             displays[idx].innerText = totalAutoCounts[playerNo][action] || 0;
                         }
                     }
-                } else {
-                    for (let action in mapping) {
-                        let idx = mapping[action];
-                        if (displays[idx]) {
-                            displays[idx].innerText = 0;
+                    if (displays[11]) {
+                        let autoOther = totalAutoCounts[playerNo]['其他失誤'] || 0;
+                        let manualVal = parseInt(displays[11].innerText) || 0;
+                        if (autoOther > manualVal) {
+                            displays[11].innerText = autoOther;
                         }
+                    }
+                }
+
+                let tagDisplay = row.querySelector('.error-tag-display');
+                if (!tagDisplay) {
+                    let td = row.cells[13]; // OTHER 欄位索引
+                    if (td && !td.querySelector('.error-tag-display')) {
+                        td.innerHTML += `<div class="error-tag-display"></div>`;
+                    }
+                    tagDisplay = row.querySelector('.error-tag-display');
+                }
+
+                if (tagDisplay) {
+                    if (rowTagsMap[rUid] && rowTagsMap[rUid].length > 0) {
+                        tagDisplay.innerText = rowTagsMap[rUid].join(' ');
+                    } else {
+                        tagDisplay.innerText = '';
                     }
                 }
 
@@ -791,13 +823,15 @@
                 '攻擊得分': 0, 
                 '攻擊失誤': 0, 
                 '吊球得分': 0, 
+                '吊球失誤': 0, 
                 '攔網得分': 0,
+                '攔網失誤': 0,
                 '其他失誤': 0
             };
         }
 
         function clearCurrentSet() {
-            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄與戰術嗎？將會清空第 ${activeSet} 局連動之球員整場總數據統計`)) {
+            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄與戰術嗎？將連帶清空第 ${activeSet}局之球員整場總數據統計`)) {
                 setsData[activeSet] = { finalScore: "", tactics: "", ourLog: [], oppLog: [] };
                 loadSetDataToUI(activeSet);
                 recalcAllStats();
