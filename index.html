@@ -506,7 +506,7 @@
                 <h2>三、 右上角懸浮功能按鈕說明</h2>
                 <ul>
                     <li><strong>說明</strong>：打開本使用說明視窗。</li>
-                    <li><strong>清空本局</strong>：快速清除目前正在檢視的該局逐分記錄與戰術（需二次確認）。</li>
+                    <li><strong>清空本局</strong>：快速清除目前正在檢視的該局逐分記錄與戰術。</li>
                     <li><strong>全部重設</strong>：清除此瀏覽器內所有的比賽快取資料（包含球員名單、所有局數與比分）。<strong>注意：點擊後將完全歸零，請謹慎使用！</strong></li>
                     <li><strong>列印 / 輸出 PDF</strong>：自動將報紙/表單格式排版為 A4 橫式，可直接連接印表機列印或儲存為 PDF 檔案。</li>
                 </ul>
@@ -1074,6 +1074,26 @@
             }
         }
 
+        // --- 核心：清空當前局數並同步重設第一頁累計統計與 LocalStorage ---
+        function clearCurrentSet() {
+            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄與戰術嗎？（第一頁的整場總成績會自動扣除本局數據）`)) {
+                // 1. 重設當前局數資料
+                setsData[activeSet] = { finalScore: "", tactics: "", ourLog: [], oppLog: [] };
+                
+                // 2. 刷新第二頁 UI 表格欄位與戰術區
+                loadSetDataToUI(activeSet);
+                
+                // 3. 即時寫入 LocalStorage 保存清空後的狀態
+                saveAllData();
+                
+                // 4. 強制重新計算整場累計統計（第一頁數據將自動扣除本局）
+                recalcAllStats();
+                
+                // 5. 重新掃描第二頁表格更新頂部記分板與比分
+                updateScoreboardFromTables();
+            }
+        }
+
         // --- 核心：跨局總表自動連動計算與備註同步 ---
         function recalcAllStats() {
             let table = document.getElementById('playerTable');
@@ -1166,18 +1186,14 @@
                 let displays = row.querySelectorAll('.count-display');
                 let rUid = row.dataset.rowUniqueId;
 
-                if (playerNo !== '' && totalAutoCounts[playerNo]) {
-                    for (let action in mapping) {
-                        let idx = mapping[action];
-                        if (displays[idx] && action !== '其他失誤') {
-                            displays[idx].innerText = totalAutoCounts[playerNo][action] || 0;
-                        }
-                    }
-                    if (displays[11]) {
-                        let autoOther = totalAutoCounts[playerNo]['其他失誤'] || 0;
-                        let manualVal = parseInt(displays[11].innerText) || 0;
-                        if (autoOther > manualVal) {
-                            displays[11].innerText = autoOther;
+                // 徹底歸零或套用重新計算後的統計數字
+                for (let action in mapping) {
+                    let idx = mapping[action];
+                    if (displays[idx]) {
+                        if (playerNo !== '' && totalAutoCounts[playerNo] && totalAutoCounts[playerNo][action] !== undefined) {
+                            displays[idx].innerText = totalAutoCounts[playerNo][action];
+                        } else {
+                            displays[idx].innerText = 0;
                         }
                     }
                 }
@@ -1218,15 +1234,6 @@
                 '攔網失誤': 0,
                 '其他失誤': 0
             };
-        }
-
-        function clearCurrentSet() {
-            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄與戰術嗎？（第一頁的整場總成績會自動扣除本局數據）`)) {
-                setsData[activeSet] = { finalScore: "", tactics: "", ourLog: [], oppLog: [] };
-                loadSetDataToUI(activeSet);
-                recalcAllStats();
-                updateScoreboardFromTables();
-            }
         }
 
         function clearAllData() {
