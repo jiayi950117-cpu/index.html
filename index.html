@@ -344,6 +344,84 @@
         .btn-warning:hover { background: #e0a800; }
         .btn-danger { background: #dc3545; color: white; }
         .btn-danger:hover { background: #c82333; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-info:hover { background: #138496; }
+
+        /* 懸浮視窗 (Modal) 樣式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #fff;
+            width: 90%;
+            max-width: 750px;
+            max-height: 85vh;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: modalFadeIn 0.2s ease-in-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-header {
+            background: #007bff;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .modal-body h2 {
+            color: #007bff;
+            font-size: 16px;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 4px;
+        }
+        .modal-body h3 {
+            color: #333;
+            font-size: 14px;
+            margin-top: 12px;
+            margin-bottom: 6px;
+        }
+        .modal-body ul {
+            margin: 5px 0 10px 20px;
+            padding: 0;
+        }
+        .modal-body li {
+            margin-bottom: 6px;
+        }
 
         /* 列印優化 */
         @media print {
@@ -362,9 +440,84 @@
 
     <!-- 浮動按鈕 -->
     <div class="action-bar">
+        <button class="btn btn-info" onclick="toggleHelpModal(true)">說明</button>
         <button class="btn btn-warning" onclick="clearCurrentSet()">清空本局</button>
         <button class="btn btn-danger" onclick="clearAllData()">全部重設</button>
         <button class="btn btn-print" onclick="window.print()">列印 / 輸出 PDF</button>
+    </div>
+
+    <!-- 說明書懸浮視窗 (Modal) -->
+    <div id="helpModal" class="modal-overlay" onclick="outsideCloseModal(event)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>🏐 排球比賽記錄與數據統計 App - 使用說明書</span>
+                <button class="modal-close-btn" onclick="toggleHelpModal(false)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>本應用程式是一套專為排球比賽設計的<strong>數位記錄工具</strong>，採用單一網頁架構（HTML/JS），支援 <strong>LocalStorage 本地自動存檔</strong>，並具備<strong>上下頁智慧雙向連動</strong>功能。</p>
+
+                <h2>一、 主要特色與功能</h2>
+                <ul>
+                    <li><strong>1. 載入後支援離線使用</strong>：首次透過網路載入網頁後，即使場邊訊號不佳或斷網，仍可順暢進行比賽記錄與統計。</li>
+                    <li><strong>2. 自動即時存檔</strong>：所有輸入的球員資料、比分、動作與戰術備註都會自動保存在瀏覽器中，重新整理或關閉分頁絕不遺失。</li>
+                    <li><strong>3. 智慧雙向連動</strong>：
+                        <ul>
+                            <li><strong>第一頁 ⇄ 第二頁</strong>：第一頁輸入的球員背號與姓名，會自動同步成為第二頁逐分記錄表的「背號下拉選單」。</li>
+                            <li><strong>計分板 ⇄ 逐分表記錄</strong>：在第二頁頂部計分板按 <code>+</code> / <code>-</code> 加減分時，下方表格會自動同步產生或修正紀錄；反之，在下方表格輸入也會即時更新上方比分。</li>
+                            <li><strong>隊伍名稱同步</strong>：在第一頁或第二頁輸入「隊伍」與「對手」，兩頁的標題與計分板會全面同步更新。</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h2>二、 頁面功能導覽</h2>
+
+                <h3>📄 第一頁：球員整場總數據統計 (Total Cumulative Statistics)</h3>
+                <ul>
+                    <li><strong>賽事基本資訊</strong>：最上方可輸入「隊伍 (TEAM)」、「對手 (VS)」、「場地 (LOCATION)」與「日期/時間」。</li>
+                    <li><strong>球員名單設定</strong>：輸入球員背號與姓名。點擊下方的 <strong>「＋ 新增球員列」</strong> 可增加記錄欄位。</li>
+                    <li><strong>各項數據追蹤</strong>：
+                        <ul>
+                            <li>支援 <strong>ACE</strong>（發球得分）、<strong>SE</strong>（發球失誤）、<strong>REC+</strong>（接球到位）、<strong>REC-</strong>（接球失誤）、<strong>KILL</strong>（攻擊得分）、<strong>ERR</strong>（攻擊失誤）、<strong>TIP</strong>（吊球得分）、<strong>TIP ER</strong>（吊球失誤）、<strong>BLK</strong>（攔網得分）、<strong>BHE</strong>（攔網失誤）、<strong>COVER</strong>（保護成功）、<strong>OTHER</strong>（其他失誤）。</li>
+                            <li>系統會根據第二頁的逐分記錄<strong>自動加總累加</strong>，也可以直接在第一頁利用數值旁的 <code>+</code> / <code>-</code> 按鈕手動微調。</li>
+                        </ul>
+                    </li>
+                    <li><strong>綜合貢獻值 (NET)</strong>：系統會自動計算正分項總和減去負分項失誤，綠色代表正貢獻、紅色代表負貢獻。</li>
+                    <li><strong>其他失誤代號說明</strong>：當在第二頁選取「其他失誤」並寫下備註時，第一頁下方會自動生成對應編號（如 <code>[1]</code>）與備註說明，同時該球員的欄位會顯示對應標籤。</li>
+                </ul>
+
+                <h3>📄 第二頁：逐分記錄表 (Point-by-Point Log)</h3>
+                <ul>
+                    <li><strong>局數切換</strong>：上方提供局數下拉選單（第 1 局～第 5 局），可切換記錄不同局次的攻守細節與戰術。</li>
+                    <li><strong>頂部即時計分板</strong>：
+                        <ul>
+                            <li>點擊我方或對方的 <code>+</code> 按鈕，系統會自動在下方左右兩側表格的對應行數填入分數與局況。</li>
+                            <li>若按 <code>-</code>（減一），系統會自動清除對應行數的分數與記錄，確保數據不衝突。</li>
+                        </ul>
+                    </li>
+                    <li><strong>雙欄逐分記錄</strong>：
+                        <ul>
+                            <li><strong>我方得分記錄</strong>：記錄我方得分時的對方分數、得分方式（下拉選單）、參與球員背號（自動從第一頁帶入）與備註。</li>
+                            <li><strong>對方得分記錄</strong>：記錄對方得分時的我方分數、失分方式、球員與備註。</li>
+                        </ul>
+                    </li>
+                    <li><strong>本局戰術記錄與教練建議</strong>：最下方提供長篇文字框，供教練記錄輪轉問題、對手習慣及戰術調整。</li>
+                </ul>
+
+                <h2>三、 右上角懸浮功能按鈕說明</h2>
+                <ul>
+                    <li><strong>說明</strong>：打開本使用說明視窗。</li>
+                    <li><strong>清空本局</strong>：快速清除目前正在檢視的該局逐分記錄與戰術（需二次確認）。</li>
+                    <li><strong>全部重設</strong>：清除此瀏覽器內所有的比賽快取資料（包含球員名單、所有局數與比分）。<strong>注意：點擊後將完全歸零，請謹慎使用！</strong></li>
+                    <li><strong>列印 / 輸出 PDF</strong>：自動將報紙/表單格式排版為 A4 橫式，可直接連接印表機列印或儲存為 PDF 檔案。</li>
+                </ul>
+
+                <h2>四、 常見問題 (FAQ)</h2>
+                <ul>
+                    <li><strong>Q：手機關掉重開，資料會不見嗎？</strong><br>答：不會。只要是用同一個手機瀏覽器打開，資料都會自動存放在手機的 LocalStorage 內。</li>
+                    <li><strong>Q：不同裝置（例如手機跟筆電）可以同步看到同一場比賽嗎？</strong><br>答：目前本 App 採用純單機架構，<strong>不同裝置間的資料是各自獨立的</strong>，不會互相連動或覆蓋。若賽後需要轉移到其他裝置，可利用「列印 / 輸出 PDF」功能保存檔案。</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <!-- 第一頁：球員個人總數據統計表 (整場累積) -->
@@ -512,6 +665,20 @@
             updateScoreboardFromTables();
             updateTeamNamesDisplay();
         };
+
+        // 控制說明書視窗顯示與隱藏
+        function toggleHelpModal(isOpen) {
+            let modal = document.getElementById('helpModal');
+            modal.style.display = isOpen ? 'flex' : 'none';
+        }
+
+        // 點擊視窗外部半透明背景時關閉
+        function outsideCloseModal(event) {
+            let modal = document.getElementById('helpModal');
+            if (event.target === modal) {
+                toggleHelpModal(false);
+            }
+        }
 
         // 雙向同步隊伍/對手名稱欄位與計分板標題
         function syncFields(type, val) {
