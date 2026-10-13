@@ -24,7 +24,7 @@
             min-height: 190mm;
             background: #fff;
             margin: 0 auto 20px auto;
-            padding: 15mm;
+            padding: 12mm 15mm;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             box-sizing: border-box;
             page-break-after: always;
@@ -32,20 +32,20 @@
         }
         h1 {
             text-align: center;
-            font-size: 22px;
-            margin-bottom: 5px;
+            font-size: 20px;
+            margin-bottom: 3px;
         }
         .subtitle {
             text-align: center;
-            font-size: 12px;
+            font-size: 11px;
             color: #666;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
         .header-info {
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             font-size: 13px;
             gap: 10px;
         }
@@ -64,6 +64,58 @@
             background: transparent;
         }
         
+        /* 頁頂大字體計分板樣式 */
+        .scoreboard-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            background: #17a2b8;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+        }
+        .score-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .score-team-title {
+            font-size: 15px;
+            font-weight: bold;
+        }
+        .score-num {
+            font-size: 26px;
+            font-weight: bold;
+            background: #000;
+            color: #ffeb3b;
+            padding: 2px 14px;
+            border-radius: 6px;
+            min-width: 36px;
+            text-align: center;
+            font-family: "Courier New", Courier, monospace;
+        }
+        .score-ctrl-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.6);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+        }
+        .score-ctrl-btn:hover {
+            background: rgba(255,255,255,0.4);
+        }
+
         /* 表格樣式 */
         table {
             width: 100%;
@@ -74,7 +126,7 @@
         th, td {
             border: 1px solid #333;
             text-align: center;
-            padding: 4px 2px;
+            padding: 3px 2px;
             vertical-align: middle;
         }
         th {
@@ -198,8 +250,8 @@
         /* 表格內備註支援自動換行與多行輸入 */
         textarea.cell-textarea {
             width: 95%;
-            height: 24px;
-            min-height: 24px;
+            height: 22px;
+            min-height: 22px;
             border: none;
             resize: vertical;
             font-family: inherit;
@@ -213,7 +265,7 @@
         }
         textarea.cell-textarea:focus {
             background: #fffdf0;
-            height: 50px; 
+            height: 45px; 
             box-shadow: 0 0 3px rgba(0,123,255,0.5);
             z-index: 10;
             position: relative;
@@ -221,7 +273,7 @@
 
         /* 第二頁專用：長篇戰術記錄與教練建議區 */
         .long-notes-box {
-            margin-top: 8px;
+            margin-top: 6px;
             border: 1px solid #333;
             padding: 6px 10px;
             border-radius: 4px;
@@ -234,7 +286,7 @@
         }
         .long-notes-textarea {
             width: 100%;
-            height: 35px;
+            height: 30px;
             border: none;
             resize: vertical;
             font-family: inherit;
@@ -255,10 +307,10 @@
         }
         .column-title {
             font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 5px;
+            font-size: 13px;
+            margin-bottom: 4px;
             background: #e6e6e6;
-            padding: 4px;
+            padding: 3px;
             text-align: center;
             border: 1px solid #333;
         }
@@ -296,6 +348,9 @@
         /* 列印優化 */
         @media print {
             .action-bar { display: none; }
+            .score-ctrl-btn { display: none; }
+            .scoreboard-container { background: #f2f2f2; color: #000; border: 1px solid #333; }
+            .score-num { background: none; color: #000; border: 1px solid #333; }
             body { background: none; padding: 0; }
             .page-container { box-shadow: none; margin: 0; padding: 0; width: 100%; min-height: auto; }
             .count-btn, .add-row-btn { display: none; }
@@ -380,6 +435,23 @@
             <div>本局最終比分: <input type="text" id="setFinalScore" oninput="saveAllData()" style="width: 70px;"></div>
         </div>
 
+        <!-- 頂部即時連動計分板 -->
+        <div class="scoreboard-container">
+            <div class="score-box">
+                <span class="score-team-title">我方得分</span>
+                <button class="score-ctrl-btn" onclick="changeScoreboard('our', -1)">-</button>
+                <span id="scoreboardOur" class="score-num">0</span>
+                <button class="score-ctrl-btn" onclick="changeScoreboard('our', 1)">+</button>
+            </div>
+            <div style="font-size: 20px; font-weight: bold;">:</div>
+            <div class="score-box">
+                <button class="score-ctrl-btn" onclick="changeScoreboard('opp', -1)">-</button>
+                <span id="scoreboardOpp" class="score-num">0</span>
+                <button class="score-ctrl-btn" onclick="changeScoreboard('opp', 1)">+</button>
+                <span class="score-team-title">對方得分</span>
+            </div>
+        </div>
+
         <div class="dual-tables">
             <!-- 左側：我方記錄 -->
             <div class="column-box">
@@ -437,6 +509,7 @@
             loadFromLocalStorage(); 
             updatePlayerSelectOptions();
             recalcAllStats();       
+            updateScoreboardFromTables();
         };
 
         function initLogTables() {
@@ -463,7 +536,7 @@
                 ourTbody.innerHTML += `
                     <tr>
                         <td><strong>${i}</strong></td>
-                        <td><input class="cell-input log-opp-score" type="text" oninput="saveAllData()" placeholder=" "></td>
+                        <td><input class="cell-input log-opp-score" type="text" oninput="saveAllData(); updateScoreboardFromTables();" placeholder=" "></td>
                         <td><select class="cell-select log-action" onchange="saveAllData(); recalcAllStats();">${actionOptions}</select></td>
                         <td><select class="cell-select log-player-select" onchange="saveAllData(); recalcAllStats();"><option value="">- 背號 -</option></select></td>
                         <td><textarea class="cell-textarea log-note" oninput="saveAllData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
@@ -472,7 +545,7 @@
                 oppTbody.innerHTML += `
                     <tr>
                         <td><strong>${i}</strong></td>
-                        <td><input class="cell-input log-our-score" type="text" oninput="saveAllData()" placeholder=" "></td>
+                        <td><input class="cell-input log-our-score" type="text" oninput="saveAllData(); updateScoreboardFromTables();" placeholder=" "></td>
                         <td><select class="cell-select log-action" onchange="saveAllData(); recalcAllStats();">${actionOptions}</select></td>
                         <td><select class="cell-select log-player-select" onchange="saveAllData(); recalcAllStats();"><option value="">- 背號 -</option></select></td>
                         <td><textarea class="cell-textarea log-note" oninput="saveAllData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
@@ -481,7 +554,73 @@
             }
         }
 
-        // 當第一頁輸入/修改球員背號與姓名時，更新第二頁所有背號下拉選單
+        // 記分板按鈕控制（往表格自動填入）
+        function changeScoreboard(side, delta) {
+            let curOur = parseInt(document.getElementById('scoreboardOur').innerText) || 0;
+            let curOpp = parseInt(document.getElementById('scoreboardOpp').innerText) || 0;
+
+            if (side === 'our') {
+                curOur = Math.max(0, curOur + delta);
+                document.getElementById('scoreboardOur').innerText = curOur;
+                if (delta > 0 && curOur >= 1 && curOur <= 30) {
+                    let ourRows = document.querySelectorAll('#ourTeamLogBody tr');
+                    let targetRow = ourRows[curOur - 1];
+                    if (targetRow) {
+                        let oppInput = targetRow.querySelector('.log-opp-score');
+                        if (!oppInput.value.trim()) {
+                            oppInput.value = curOpp;
+                        }
+                    }
+                }
+            } else if (side === 'opp') {
+                curOpp = Math.max(0, curOpp + delta);
+                document.getElementById('scoreboardOpp').innerText = curOpp;
+                if (delta > 0 && curOpp >= 1 && curOpp <= 30) {
+                    let oppRows = document.querySelectorAll('#oppTeamLogBody tr');
+                    let targetRow = oppRows[curOpp - 1];
+                    if (targetRow) {
+                        let ourInput = targetRow.querySelector('.log-our-score');
+                        if (!ourInput.value.trim()) {
+                            ourInput.value = curOur;
+                        }
+                    }
+                }
+            }
+
+            // 更新本局最終比分欄位
+            document.getElementById('setFinalScore').value = `${curOur} : ${curOpp}`;
+            saveAllData();
+        }
+
+        // 掃描表格更新頂部記分板
+        function updateScoreboardFromTables() {
+            let ourRows = document.querySelectorAll('#ourTeamLogBody tr');
+            let oppRows = document.querySelectorAll('#oppTeamLogBody tr');
+
+            let maxOur = 0;
+            let maxOpp = 0;
+
+            ourRows.forEach((r, idx) => {
+                let action = r.querySelector('.log-action').value;
+                let oppScore = r.querySelector('.log-opp-score').value;
+                if (action || oppScore) {
+                    maxOur = idx + 1;
+                }
+            });
+
+            oppRows.forEach((r, idx) => {
+                let action = r.querySelector('.log-action').value;
+                let ourScore = r.querySelector('.log-our-score').value;
+                if (action || ourScore) {
+                    maxOpp = idx + 1;
+                }
+            });
+
+            document.getElementById('scoreboardOur').innerText = maxOur;
+            document.getElementById('scoreboardOpp').innerText = maxOpp;
+            document.getElementById('setFinalScore').value = `${maxOur} : ${maxOpp}`;
+        }
+
         function updatePlayerSelectOptions() {
             let playerRows = document.querySelectorAll('#playerTableBody tr');
             let playerList = [];
@@ -505,7 +644,7 @@
                     opt.textContent = label;
                     select.appendChild(opt);
                 });
-                select.value = currentVal; // 保留之前已選擇的值
+                select.value = currentVal;
             });
         }
 
@@ -593,6 +732,7 @@
             activeSet = parseInt(setNo);
             loadSetDataToUI(activeSet);
             recalcAllStats();
+            updateScoreboardFromTables();
         }
 
         function saveAllData() {
@@ -864,6 +1004,7 @@
                 setsData[activeSet] = { finalScore: "", tactics: "", ourLog: [], oppLog: [] };
                 loadSetDataToUI(activeSet);
                 recalcAllStats();
+                updateScoreboardFromTables();
             }
         }
 
@@ -889,6 +1030,7 @@
                 initLogTables();
                 updatePlayerSelectOptions();
                 recalcAllStats();
+                updateScoreboardFromTables();
             }
         }
     </script>
