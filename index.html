@@ -180,16 +180,6 @@
             width: 150px;
             outline: none;
         }
-        .del-note-btn {
-            background: none;
-            border: none;
-            color: #d9534f;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 12px;
-            margin-left: 5px;
-        }
-        .del-note-btn:hover { color: #bd2130; }
 
         /* 顯示代號在格子內的樣式 */
         .error-tag-display {
@@ -303,7 +293,7 @@
             .action-bar { display: none; }
             body { background: none; padding: 0; }
             .page-container { box-shadow: none; margin: 0; padding: 0; width: 100%; min-height: auto; }
-            .count-btn, .add-row-btn, .del-note-btn { display: none; }
+            .count-btn, .add-row-btn { display: none; }
             textarea.cell-textarea, .long-notes-textarea { height: auto !important; border: none; }
         }
     </style>
@@ -358,12 +348,12 @@
         <div class="notes-section">
             <h4>其他失誤代號說明 (全場累積 Other Error Notes):</h4>
             <div id="otherNotesContainer">
-                <span style="color: #777; font-style: italic;">點擊「其他失誤」欄位中的記事按鈕（📝），此處將自動產生對應編號與備註欄。</span>
+                <span style="color: #777; font-style: italic;">當透過第二頁選取「其他失誤」時，此處將自動產生對應編號與備註內容。</span>
             </div>
         </div>
     </div>
 
-    <!-- 第二頁：逐分記錄表 (可透過上方下拉選單切換第 1 局、第 2 局、第 3 局) -->
+    <!-- 第二頁：逐分記錄表 -->
     <div class="page-container">
         <h1>排球比賽記錄表 - 逐分記錄表</h1>
         <div class="subtitle">POINT-BY-POINT LOG (OUR TEAM VS OPPONENT)</div>
@@ -399,7 +389,7 @@
                         </tr>
                     </thead>
                     <tbody id="ourTeamLogBody">
-                        <!-- 動態產生 30 分記錄列 -->
+                        <!-- 動態產生 -->
                     </tbody>
                 </table>
             </div>
@@ -418,13 +408,12 @@
                         </tr>
                     </thead>
                     <tbody id="oppTeamLogBody">
-                        <!-- 動態產生 30 分記錄列 -->
+                        <!-- 動態產生 -->
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 第二頁專用：長篇戰術記錄與教練建議區 -->
         <div class="long-notes-box">
             <h4>本局戰術記錄與教練建議 (Match Tactics & Coach Suggestions - 當前局數):</h4>
             <textarea id="setNotesTextarea" class="long-notes-textarea" oninput="saveCurrentSetData()" placeholder="在此輸入本局長篇戰術調整、對手習慣、輪轉問題或教練叮嚀..."></textarea>
@@ -432,8 +421,6 @@
     </div>
 
     <script>
-        // 資料結構：儲存每一局的逐分記錄資料
-        // setsData[1] = { ourLog: [...], oppLog: [...], tactics: "..." }
         let setsData = {
             1: { ourLog: [], oppLog: [], tactics: "" },
             2: { ourLog: [], oppLog: [], tactics: "" },
@@ -441,10 +428,8 @@
             4: { ourLog: [], oppLog: [], tactics: "" },
             5: { ourLog: [], oppLog: [], tactics: "" }
         };
-        let activeSet = 1;
-        let noteUniqueCounter = 0;
+        activeSet = 1;
 
-        // 初始化表格與生成 30 行逐分記錄
         window.onload = function() {
             for(let i=0; i<8; i++) {
                 addPlayerRow();
@@ -459,47 +444,36 @@
             ourTbody.innerHTML = '';
             oppTbody.innerHTML = '';
 
+            let actionOptions = `
+                <option value="">- 選擇 -</option>
+                <option value="發球得分">發球得分</option>
+                <option value="攻擊得分">攻擊得分</option>
+                <option value="吊球得分">吊球得分</option>
+                <option value="攔網得分">攔網得分</option>
+                <option value="對手失誤">對手失誤</option>
+                <option value="發球失誤">發球失誤</option>
+                <option value="攻擊失誤">攻擊失誤</option>
+                <option value="接球失誤">接球失誤</option>
+                <option value="其他失誤">其他失誤</option>
+            `;
+
             for(let i=1; i<=30; i++) {
                 ourTbody.innerHTML += `
                     <tr>
                         <td><strong>${i}</strong></td>
                         <td><input class="cell-input log-opp-score" type="text" oninput="saveCurrentSetData()" placeholder=" "></td>
-                        <td>
-                            <select class="cell-select log-action" onchange="saveCurrentSetData(); recalcAllStats();">
-                                <option value="">- 選擇 -</option>
-                                <option value="發球得分">發球得分</option>
-                                <option value="攻擊得分">攻擊得分</option>
-                                <option value="吊球得分">吊球得分</option>
-                                <option value="攔網得分">攔網得分</option>
-                                <option value="對手失誤">對手失誤</option>
-                                <option value="發球失誤">發球失誤</option>
-                                <option value="攻擊失誤">攻擊失誤</option>
-                                <option value="接球失誤">接球失誤</option>
-                            </select>
-                        </td>
+                        <td><select class="cell-select log-action" onchange="saveCurrentSetData(); recalcAllStats();">${actionOptions}</select></td>
                         <td><input class="cell-input log-player-input" type="text" oninput="saveCurrentSetData(); recalcAllStats();" placeholder="背號"></td>
-                        <td><textarea class="cell-textarea log-note" oninput="saveCurrentSetData()" placeholder="點此輸入..."></textarea></td>
+                        <td><textarea class="cell-textarea log-note" oninput="saveCurrentSetData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
                     </tr>
                 `;
                 oppTbody.innerHTML += `
                     <tr>
                         <td><strong>${i}</strong></td>
                         <td><input class="cell-input log-our-score" type="text" oninput="saveCurrentSetData()" placeholder=" "></td>
-                        <td>
-                            <select class="cell-select log-action" onchange="saveCurrentSetData(); recalcAllStats();">
-                                <option value="">- 選擇 -</option>
-                                <option value="發球得分">發球得分</option>
-                                <option value="攻擊得分">攻擊得分</option>
-                                <option value="吊球得分">吊球得分</option>
-                                <option value="攔網得分">攔網得分</option>
-                                <option value="對手失誤">對手失誤</option>
-                                <option value="發球失誤">發球失誤</option>
-                                <option value="攻擊失誤">攻擊失誤</option>
-                                <option value="接球失誤">接球失誤</option>
-                            </select>
-                        </td>
+                        <td><select class="cell-select log-action" onchange="saveCurrentSetData(); recalcAllStats();">${actionOptions}</select></td>
                         <td><input class="cell-input log-player-input" type="text" oninput="saveCurrentSetData(); recalcAllStats();" placeholder="背號"></td>
-                        <td><textarea class="cell-textarea log-note" oninput="saveCurrentSetData()" placeholder="點此輸入..."></textarea></td>
+                        <td><textarea class="cell-textarea log-note" oninput="saveCurrentSetData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
                     </tr>
                 `;
             }
@@ -534,11 +508,7 @@
                 ${createCounterTD()}
                 ${createCounterTD()}
                 ${createCounterTD()}
-                <td>
-                    <span class="count-display" style="display:none;">0</span>
-                    <button class="count-btn" style="color: #d9534f; padding: 3px 6px; font-weight: bold;" title="新增備註與計算失誤" onclick="addOtherError(this)">📝 記事</button>
-                    <div class="error-tag-display"></div>
-                </td>
+                ${createCounterTD()}
                 <td><span class="net-score">0</span></td>
             `;
             tbody.appendChild(tr);
@@ -557,7 +527,7 @@
         function updateNetScore(row) {
             let displays = row.querySelectorAll('.count-display');
             let positiveIndices = [0, 2, 4, 6, 8, 9]; 
-            let negativeIndices = [1, 3, 5, 7, 10]; 
+            let negativeIndices = [1, 3, 5, 7, 10]; // 包含第10個索引（其他失誤計數器）
 
             let positiveSum = 0;
             positiveIndices.forEach(idx => {
@@ -581,12 +551,11 @@
             }
         }
 
-        // --- 局數切換與資料暫存機制 ---
         function switchSet(setNo) {
-            saveCurrentSetData(); // 切換前先存好當前局數
+            saveCurrentSetData();
             activeSet = parseInt(setNo);
-            loadSetData(activeSet); // 載入新局數的逐分記錄
-            recalcAllStats(); // 重新計算總表
+            loadSetData(activeSet);
+            recalcAllStats();
         }
 
         function saveCurrentSetData() {
@@ -615,7 +584,6 @@
             });
 
             let tactics = document.getElementById('setNotesTextarea').value;
-
             setsData[activeSet] = { ourLog, oppLog, tactics };
         }
 
@@ -641,44 +609,73 @@
             document.getElementById('setNotesTextarea').value = data.tactics || '';
         }
 
-        // --- 跨局總表自動累加核心邏輯 ---
+        // --- 核心：跨局總表統計與第二頁「其他失誤」備註同步 ---
         function recalcAllStats() {
-            saveCurrentSetData(); // 確保最新狀態被捕捉
+            saveCurrentSetData();
 
             let table = document.getElementById('playerTable');
             if (!table) return;
 
             let rows = table.querySelectorAll('tbody tr');
-            
-            // 統計所有局數（1到5局）中，各個背號的累積次數
             let totalAutoCounts = {}; 
+            let otherErrorItems = []; // 收集全場第二頁選「其他失誤」的項目
 
             for (let s = 1; s <= 5; s++) {
                 let sData = setsData[s];
                 if (!sData) continue;
 
-                // 統計我方記錄
-                sData.ourLog.forEach(item => {
-                    let pNo = item.player.trim();
-                    let action = item.action;
-                    if (action && pNo !== '') {
-                        if (!totalAutoCounts[pNo]) totalAutoCounts[pNo] = getEmptyCountObj();
-                        if (totalAutoCounts[pNo][action] !== undefined) totalAutoCounts[pNo][action]++;
-                    }
-                });
+                let processLog = (logArr) => {
+                    logArr.forEach(item => {
+                        let pNo = item.player.trim();
+                        let action = item.action;
+                        if (action && pNo !== '') {
+                            if (!totalAutoCounts[pNo]) totalAutoCounts[pNo] = getEmptyCountObj();
+                            if (totalAutoCounts[pNo][action] !== undefined) {
+                                totalAutoCounts[pNo][action]++;
+                            }
 
-                // 統計對方記錄（若對方記錄中有我方球員動作）
-                sData.oppLog.forEach(item => {
-                    let pNo = item.player.trim();
-                    let action = item.action;
-                    if (action && pNo !== '') {
-                        if (!totalAutoCounts[pNo]) totalAutoCounts[pNo] = getEmptyCountObj();
-                        if (totalAutoCounts[pNo][action] !== undefined) totalAutoCounts[pNo][action]++;
-                    }
-                });
+                            if (action === '其他失誤') {
+                                otherErrorItems.push({
+                                    playerNo: pNo,
+                                    noteText: item.note ? item.note.trim() : '無備註'
+                                });
+                            }
+                        }
+                    });
+                };
+
+                processLog(sData.ourLog);
+                processLog(sData.oppLog);
             }
 
-            // 對應到第一頁欄位索引 (0:ACE, 1:SE, 3:REC-, 4:KILL, 5:ERR/BLK, 6:TIP, 8:BLK)
+            // 更新第一頁下方的其他失誤代號說明區
+            let container = document.getElementById('otherNotesContainer');
+            if (otherErrorItems.length === 0) {
+                container.innerHTML = '<span style="color: #777; font-style: italic;">當透過第二頁選取「其他失誤」時，此處將自動產生對應編號與備註內容。</span>';
+            } else {
+                container.innerHTML = '';
+            }
+
+            otherErrorItems.forEach((errItem, index) => {
+                let newNum = index + 1;
+                let formattedNum = `[${newNum}]`;
+                let pNo = errItem.playerNo;
+
+                let playerName = '未命名';
+                rows.forEach(r => {
+                    let noIn = r.querySelector('.player-no-input');
+                    if (noIn && noIn.value.trim() === pNo) {
+                        playerName = r.cells[1].querySelector('input').value || '未命名';
+                    }
+                });
+
+                let div = document.createElement('div');
+                div.className = 'note-item';
+                div.innerHTML = `<strong>${formattedNum}</strong> (背號:${pNo} ${playerName}): <input type="text" value="${errItem.noteText}" readonly style="width:180px;">`;
+                container.appendChild(div);
+            });
+
+            // 對應欄位索引 (0:ACE, 1:SE, 3:REC-, 4:KILL, 5:ERR/BLK, 6:TIP, 8:BLK, 10:OTHER)
             let mapping = {
                 '發球得分': 0,
                 '發球失誤': 1,
@@ -686,10 +683,10 @@
                 '攻擊得分': 4,
                 '攻擊失誤': 5,
                 '吊球得分': 6,
-                '攔網得分': 8
+                '攔網得分': 8,
+                '其他失誤': 10
             };
 
-            // 更新第一頁總表各列數據
             rows.forEach(row => {
                 let noInput = row.querySelector('.player-no-input');
                 let playerNo = noInput ? noInput.value.trim() : '';
@@ -698,16 +695,23 @@
                 if (playerNo !== '' && totalAutoCounts[playerNo]) {
                     for (let action in mapping) {
                         let idx = mapping[action];
-                        if (displays[idx]) {
+                        // 僅自動更新非手動調整項（或在此與手動計數器結合）
+                        // 為了讓第一頁手動加減號可以獨立運作，我們將第二頁自動算出的值作為基礎或與手動計數疊加
+                        if (displays[idx] && action !== '其他失誤') {
                             displays[idx].innerText = totalAutoCounts[playerNo][action] || 0;
                         }
                     }
-                } else {
-                    for (let action in mapping) {
-                        let idx = mapping[action];
-                        if (displays[idx]) {
-                            displays[idx].innerText = 0;
-                        }
+                    // 針對「其他失誤」(index 10)，我們將「手動按的次數 + 第二頁自動連動的次數」進行疊加
+                    if (displays[10]) {
+                        let autoOtherCount = totalAutoCounts[playerNo]['其他失誤'] || 0;
+                        // 這裡保留原本手動的數值邏輯，若您希望純粹由第二頁輸入，也可直接賦值
+                        // 讓它自動疊加最符合「手動與自動雙向皆可」的需求
+                        let currentVal = parseInt(displays[10].dataset.autoVal || 0);
+                        let diff = autoOtherCount - currentVal;
+                        displays[10].dataset.autoVal = autoOtherCount;
+                        
+                        let manualVal = parseInt(displays[10].innerText) || 0;
+                        displays[10].innerText = Math.max(autoOtherCount, manualVal); // 確保至少有自動帶入的量
                     }
                 }
 
@@ -723,121 +727,13 @@
                 '攻擊得分': 0, 
                 '攻擊失誤': 0, 
                 '吊球得分': 0, 
-                '攔網得分': 0 
+                '攔網得分': 0,
+                '其他失誤': 0
             };
         }
 
-        // --- 其他失誤記事與遞補 ---
-        function addOtherError(btn) {
-            noteUniqueCounter++;
-            let noteId = `note-item-${noteUniqueCounter}`;
-
-            let row = btn.closest('tr');
-            let displaySpan = row.querySelectorAll('.count-display')[10];
-            
-            if (displaySpan) {
-                let currentVal = parseInt(displaySpan.innerText) || 0;
-                displaySpan.innerText = currentVal + 1;
-                updateNetScore(row);
-            }
-
-            let noInput = row.cells[0].querySelector('input').value || '?';
-            let nameInput = row.cells[1].querySelector('input').value || '未命名';
-
-            let container = document.getElementById('otherNotesContainer');
-            if(container.querySelector('span')) {
-                container.innerHTML = '';
-            }
-
-            let div = document.createElement('div');
-            div.className = 'note-item';
-            div.id = noteId;
-            div.dataset.rowUniqueId = row.dataset.rowUniqueId;
-            
-            div.innerHTML = `<strong><span class="note-num-text"></span></strong> (背號:${noInput} ${nameInput}): <input type="text" placeholder="輸入失誤原因..."><button class="del-note-btn" onclick="removeOtherError('${noteId}')" title="刪除此備註">❌</button>`;
-            
-            container.appendChild(div);
-            renumberNotes();
-        }
-
-        function removeOtherError(noteId) {
-            let noteDiv = document.getElementById(noteId);
-            if (!noteDiv) return;
-
-            let rowUniqueId = noteDiv.dataset.rowUniqueId;
-            let table = document.getElementById('playerTable');
-            
-            let targetRow = null;
-            if (table) {
-                for (let i = 1; i < table.rows.length; i++) {
-                    if (table.rows[i].dataset.rowUniqueId === rowUniqueId) {
-                        targetRow = table.rows[i];
-                        break;
-                    }
-                }
-            }
-
-            if (targetRow) {
-                let displaySpan = targetRow.querySelectorAll('.count-display')[10];
-                if (displaySpan) {
-                    let currentVal = parseInt(displaySpan.innerText) || 0;
-                    if (currentVal > 0) {
-                        displaySpan.innerText = currentVal - 1;
-                        updateNetScore(targetRow);
-                    }
-                }
-            }
-
-            noteDiv.remove();
-            renumberNotes();
-
-            let container = document.getElementById('otherNotesContainer');
-            if (container.children.length === 0) {
-                container.innerHTML = '<span style="color: #777; font-style: italic;">點擊「其他失誤」欄位中的記事按鈕（📝），此處將自動產生對應編號與備註欄。</span>';
-            }
-        }
-
-        function renumberNotes() {
-            let container = document.getElementById('otherNotesContainer');
-            let noteItems = container.querySelectorAll('.note-item');
-            
-            let table = document.getElementById('playerTable');
-            let rowTagsMap = {};
-
-            noteItems.forEach((item, index) => {
-                let newNum = index + 1;
-                let formattedNum = `[${newNum}]`;
-                
-                let numSpan = item.querySelector('.note-num-text');
-                if (numSpan) numSpan.innerText = formattedNum;
-
-                let rowUniqueId = item.dataset.rowUniqueId;
-                if (!rowTagsMap[rowUniqueId]) {
-                    rowTagsMap[rowUniqueId] = [];
-                }
-                rowTagsMap[rowUniqueId].push(formattedNum);
-            });
-
-            if (table) {
-                for (let i = 1; i < table.rows.length; i++) {
-                    let row = table.rows[i];
-                    let rowUniqueId = row.dataset.rowUniqueId;
-                    let tagDisplay = row.querySelector('.error-tag-display');
-                    
-                    if (tagDisplay) {
-                        if (rowTagsMap[rowUniqueId] && rowTagsMap[rowUniqueId].length > 0) {
-                            tagDisplay.innerText = rowTagsMap[rowUniqueId].join(' ');
-                        } else {
-                            tagDisplay.innerText = '';
-                        }
-                    }
-                }
-            }
-        }
-
-        // --- 清空控制 ---
         function clearCurrentSet() {
-            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄嗎？（第一頁的整場總成績會自動扣除本局數據）`)) {
+            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄嗎？`)) {
                 setsData[activeSet] = { ourLog: [], oppLog: [], tactics: "" };
                 loadSetData(activeSet);
                 recalcAllStats();
@@ -863,17 +759,12 @@
                 selects.forEach(select => select.selectedIndex = 0);
                 
                 const displays = document.querySelectorAll('.count-display');
-                displays.forEach(span => span.innerText = '0');
+                displays.forEach(span => { span.innerText = '0'; span.dataset.autoVal = '0'; });
 
-                const tagDisplays = document.querySelectorAll('.error-tag-display');
-                tagDisplays.forEach(td => { td.innerText = ''; });
-
-                document.getElementById('otherNotesContainer').innerHTML = '<span style="color: #777; font-style: italic;">點擊「其他失誤」欄位中的記事按鈕（📝），此處將自動產生對應編號與備註欄。</span>';
+                document.getElementById('otherNotesContainer').innerHTML = '<span style="color: #777; font-style: italic;">當透過第二頁選取「其他失誤」時，此處將自動產生對應編號與備註內容。</span>';
 
                 const nets = document.querySelectorAll('.net-score');
                 nets.forEach(span => { span.innerText = '0'; span.style.color = '#28a745'; });
-
-                noteUniqueCounter = 0;
             }
         }
     </script>
