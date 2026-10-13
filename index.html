@@ -287,6 +287,8 @@
         .btn-print:hover { background: #218838; }
         .btn-warning { background: #ffc107; color: #333; }
         .btn-warning:hover { background: #e0a800; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; }
 
         /* 列印優化 */
         @media print {
@@ -302,8 +304,8 @@
 
     <!-- 浮動按鈕 -->
     <div class="action-bar">
-        <button class="btn btn-warning" onclick="clearCurrentSet()">清空本局逐分記錄</button>
-        <button class="btn" onclick="clearAllData()">全部重設</button>
+        <button class="btn btn-warning" onclick="clearCurrentSet()">清空本局</button>
+        <button class="btn btn-danger" onclick="clearAllData()">全部重設</button>
         <button class="btn btn-print" onclick="window.print()">列印 / 輸出 PDF</button>
     </div>
 
@@ -313,10 +315,10 @@
         <div class="subtitle">VOLLEYBALL MATCH RECORD SHEET (TOTAL CUMULATIVE STATISTICS)</div>
         
         <div class="header-info">
-            <div>隊伍 (TEAM): <input type="text" style="width: 150px;"></div>
-            <div>對手 (VS): <input type="text" style="width: 150px;"></div>
-            <div>場地 (LOCATION): <input type="text" style="width: 150px;"></div>
-            <div>日期/時間 (DATE/TIME): <input type="text" style="width: 130px;"></div>
+            <div>隊伍 (TEAM): <input type="text" id="globalTeam" class="save-global" oninput="saveAllData()" style="width: 150px;"></div>
+            <div>對手 (VS): <input type="text" id="globalVs" class="save-global" oninput="saveAllData()" style="width: 150px;"></div>
+            <div>場地 (LOCATION): <input type="text" id="globalLocation" class="save-global" oninput="saveAllData()" style="width: 150px;"></div>
+            <div>日期/時間 (DATE/TIME): <input type="text" id="globalDateTime" class="save-global" oninput="saveAllData()" style="width: 130px;"></div>
         </div>
 
         <table id="playerTable">
@@ -343,7 +345,7 @@
             </tbody>
         </table>
 
-        <button class="add-row-btn" onclick="addPlayerRow()">＋ 新增球員列</button>
+        <button class="add-row-btn" onclick="addPlayerRow(null)">＋ 新增球員列</button>
 
         <div class="notes-section">
             <h4>其他失誤代號說明 (全場累積 Other Error Notes):</h4>
@@ -359,8 +361,8 @@
         <div class="subtitle">POINT-BY-POINT LOG (OUR TEAM VS OPPONENT)</div>
         
         <div class="header-info">
-            <div>隊伍 (TEAM): <input type="text" style="width: 120px;"></div>
-            <div>對手 (VS): <input type="text" style="width: 120px;"></div>
+            <div>隊伍 (TEAM): <input type="text" id="setTeam" class="save-global" oninput="saveAllData()" style="width: 120px;"></div>
+            <div>對手 (VS): <input type="text" id="setVs" class="save-global" oninput="saveAllData()" style="width: 120px;"></div>
             <div>
                 <strong>目前記錄局數:</strong> 
                 <select id="currentSetSelect" onchange="switchSet(this.value)" style="font-weight: bold; color: #007bff; font-size: 14px;">
@@ -371,7 +373,7 @@
                     <option value="5">第 5 局 (Set 5)</option>
                 </select>
             </div>
-            <div>本局最終比分: <input type="text" style="width: 70px;"></div>
+            <div>本局最終比分: <input type="text" id="setFinalScore" oninput="saveAllData()" style="width: 70px;"></div>
         </div>
 
         <div class="dual-tables">
@@ -388,9 +390,7 @@
                             <th style="width: 25%;">備註</th>
                         </tr>
                     </thead>
-                    <tbody id="ourTeamLogBody">
-                        <!-- 動態產生 -->
-                    </tbody>
+                    <tbody id="ourTeamLogBody"></tbody>
                 </table>
             </div>
 
@@ -407,35 +407,31 @@
                             <th style="width: 25%;">備註</th>
                         </tr>
                     </thead>
-                    <tbody id="oppTeamLogBody">
-                        <!-- 動態產生 -->
-                    </tbody>
+                    <tbody id="oppTeamLogBody"></tbody>
                 </table>
             </div>
         </div>
 
         <div class="long-notes-box">
             <h4>本局戰術記錄與教練建議 (Match Tactics & Coach Suggestions - 當前局數):</h4>
-            <textarea id="setNotesTextarea" class="long-notes-textarea" oninput="saveCurrentSetData()" placeholder="在此輸入本局長篇戰術調整、對手習慣、輪轉問題或教練叮嚀..."></textarea>
+            <textarea id="setNotesTextarea" class="long-notes-textarea" oninput="saveAllData()" placeholder="在此輸入本局長篇戰術調整、對手習慣、輪轉問題或教練叮嚀..."></textarea>
         </div>
     </div>
 
     <script>
         let setsData = {
-            1: { ourLog: [], oppLog: [], tactics: "" },
-            2: { ourLog: [], oppLog: [], tactics: "" },
-            3: { ourLog: [], oppLog: [], tactics: "" },
-            4: { ourLog: [], oppLog: [], tactics: "" },
-            5: { ourLog: [], oppLog: [], tactics: "" }
+            1: { finalScore: "", tactics: "", ourLog: [], oppLog: [] },
+            2: { finalScore: "", tactics: "", ourLog: [], oppLog: [] },
+            3: { finalScore: "", tactics: "", ourLog: [], oppLog: [] },
+            4: { finalScore: "", tactics: "", ourLog: [], oppLog: [] },
+            5: { finalScore: "", tactics: "", ourLog: [], oppLog: [] }
         };
-        activeSet = 1;
+        let activeSet = 1;
 
         window.onload = function() {
-            for(let i=0; i<8; i++) {
-                addPlayerRow();
-            }
             initLogTables();
-            loadSetData(1);
+            loadFromLocalStorage();
+            recalcAllStats();
         };
 
         function initLogTables() {
@@ -461,57 +457,62 @@
                 ourTbody.innerHTML += `
                     <tr>
                         <td><strong>${i}</strong></td>
-                        <td><input class="cell-input log-opp-score" type="text" oninput="saveCurrentSetData()" placeholder=" "></td>
-                        <td><select class="cell-select log-action" onchange="saveCurrentSetData(); recalcAllStats();">${actionOptions}</select></td>
-                        <td><input class="cell-input log-player-input" type="text" oninput="saveCurrentSetData(); recalcAllStats();" placeholder="背號"></td>
-                        <td><textarea class="cell-textarea log-note" oninput="saveCurrentSetData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
+                        <td><input class="cell-input log-opp-score" type="text" oninput="saveAllData()" placeholder=" "></td>
+                        <td><select class="cell-select log-action" onchange="saveAllData(); recalcAllStats();">${actionOptions}</select></td>
+                        <td><input class="cell-input log-player-input" type="text" oninput="saveAllData(); recalcAllStats();" placeholder="背號"></td>
+                        <td><textarea class="cell-textarea log-note" oninput="saveAllData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
                     </tr>
                 `;
                 oppTbody.innerHTML += `
                     <tr>
                         <td><strong>${i}</strong></td>
-                        <td><input class="cell-input log-our-score" type="text" oninput="saveCurrentSetData()" placeholder=" "></td>
-                        <td><select class="cell-select log-action" onchange="saveCurrentSetData(); recalcAllStats();">${actionOptions}</select></td>
-                        <td><input class="cell-input log-player-input" type="text" oninput="saveCurrentSetData(); recalcAllStats();" placeholder="背號"></td>
-                        <td><textarea class="cell-textarea log-note" oninput="saveCurrentSetData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
+                        <td><input class="cell-input log-our-score" type="text" oninput="saveAllData()" placeholder=" "></td>
+                        <td><select class="cell-select log-action" onchange="saveAllData(); recalcAllStats();">${actionOptions}</select></td>
+                        <td><input class="cell-input log-player-input" type="text" oninput="saveAllData(); recalcAllStats();" placeholder="背號"></td>
+                        <td><textarea class="cell-textarea log-note" oninput="saveAllData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
                     </tr>
                 `;
             }
         }
 
-        function createCounterTD() {
+        function createCounterTD(val = 0) {
             return `<td>
                 <div class="counter-group">
                     <button class="count-btn" onclick="changeCount(this, -1)">-</button>
-                    <span class="count-display">0</span>
+                    <span class="count-display">${val}</span>
                     <button class="count-btn" onclick="changeCount(this, 1)">+</button>
                 </div>
             </td>`;
         }
 
-        function addPlayerRow() {
+        function addPlayerRow(data) {
             let tbody = document.getElementById('playerTableBody');
             let tr = document.createElement('tr');
-            let rowUniqueId = 'row-' + Math.random().toString(36).substr(2, 9);
+            let rowUniqueId = data && data.rowUniqueId ? data.rowUniqueId : ('row-' + Math.random().toString(36).substr(2, 9));
             tr.dataset.rowUniqueId = rowUniqueId;
 
+            let noVal = data && data.no !== undefined ? data.no : '';
+            let nameVal = data && data.name !== undefined ? data.name : '';
+            let counts = data && data.counts ? data.counts : [0,0,0,0,0,0,0,0,0,0,0];
+
             tr.innerHTML = `
-                <td><input class="cell-input player-no-input" type="text" oninput="recalcAllStats()"></td>
-                <td><input class="cell-input" type="text" style="text-align:left;"></td>
-                ${createCounterTD()}
-                ${createCounterTD()}
-                ${createCounterTD()}
-                ${createCounterTD()}
-                ${createCounterTD()}
-                ${createCounterTD()}
-                ${createCounterTD()}
-                ${createCounterTD()}
-                ${createCounterTD()}
-                ${createCounterTD()}
-                ${createCounterTD()}
+                <td><input class="cell-input player-no-input" type="text" value="${noVal}" oninput="saveAllData(); recalcAllStats()"></td>
+                <td><input class="cell-input" type="text" value="${nameVal}" style="text-align:left;" oninput="saveAllData()"></td>
+                ${createCounterTD(counts[0])}
+                ${createCounterTD(counts[1])}
+                ${createCounterTD(counts[2])}
+                ${createCounterTD(counts[3])}
+                ${createCounterTD(counts[4])}
+                ${createCounterTD(counts[5])}
+                ${createCounterTD(counts[6])}
+                ${createCounterTD(counts[7])}
+                ${createCounterTD(counts[8])}
+                ${createCounterTD(counts[9])}
+                ${createCounterTD(counts[10])}
                 <td><span class="net-score">0</span></td>
             `;
             tbody.appendChild(tr);
+            updateNetScore(tr);
         }
 
         function changeCount(btn, amount) {
@@ -522,12 +523,13 @@
             displaySpan.innerText = newVal;
 
             updateNetScore(btn.closest('tr'));
+            saveAllData();
         }
 
         function updateNetScore(row) {
             let displays = row.querySelectorAll('.count-display');
             let positiveIndices = [0, 2, 4, 6, 8, 9]; 
-            let negativeIndices = [1, 3, 5, 7, 10]; // 包含第10個索引（其他失誤計數器）
+            let negativeIndices = [1, 3, 5, 7, 10]; 
 
             let positiveSum = 0;
             positiveIndices.forEach(idx => {
@@ -552,18 +554,44 @@
         }
 
         function switchSet(setNo) {
-            saveCurrentSetData();
+            saveAllData();
             activeSet = parseInt(setNo);
-            loadSetData(activeSet);
+            loadSetDataToUI(activeSet);
             recalcAllStats();
         }
 
-        function saveCurrentSetData() {
+        function saveAllData() {
+            let globalInfo = {
+                team: document.getElementById('globalTeam').value,
+                vs: document.getElementById('globalVs').value,
+                location: document.getElementById('globalLocation').value,
+                dateTime: document.getElementById('globalDateTime').value,
+                setTeam: document.getElementById('setTeam').value,
+                setVs: document.getElementById('setVs').value
+            };
+            localStorage.setItem('vb_globalInfo', JSON.stringify(globalInfo));
+
+            let rows = document.querySelectorAll('#playerTableBody tr');
+            let playersData = [];
+            rows.forEach(r => {
+                let no = r.querySelector('.player-no-input').value;
+                let name = r.cells[1].querySelector('input').value;
+                let counts = [];
+                r.querySelectorAll('.count-display').forEach(span => {
+                    counts.push(parseInt(span.innerText) || 0);
+                });
+                playersData.push({
+                    rowUniqueId: r.dataset.rowUniqueId,
+                    no: no,
+                    name: name,
+                    counts: counts
+                });
+            });
+            localStorage.setItem('vb_playersData', JSON.stringify(playersData));
+
             let ourRows = document.querySelectorAll('#ourTeamLogBody tr');
             let oppRows = document.querySelectorAll('#oppTeamLogBody tr');
-            
-            let ourLog = [];
-            let oppLog = [];
+            let ourLog = [], oppLog = [];
 
             ourRows.forEach(r => {
                 ourLog.push({
@@ -573,7 +601,6 @@
                     note: r.querySelector('.log-note').value
                 });
             });
-
             oppRows.forEach(r => {
                 oppLog.push({
                     score: r.querySelector('.log-our-score').value,
@@ -583,12 +610,55 @@
                 });
             });
 
-            let tactics = document.getElementById('setNotesTextarea').value;
-            setsData[activeSet] = { ourLog, oppLog, tactics };
+            setsData[activeSet] = {
+                finalScore: document.getElementById('setFinalScore').value,
+                tactics: document.getElementById('setNotesTextarea').value,
+                ourLog: ourLog,
+                oppLog: oppLog
+            };
+            localStorage.setItem('vb_setsData', JSON.stringify(setsData));
         }
 
-        function loadSetData(setNo) {
-            let data = setsData[setNo];
+        function loadFromLocalStorage() {
+            let gInfo = localStorage.getItem('vb_globalInfo');
+            if (gInfo) {
+                let info = JSON.parse(gInfo);
+                document.getElementById('globalTeam').value = info.team || '';
+                document.getElementById('globalVs').value = info.vs || '';
+                document.getElementById('globalLocation').value = info.location || '';
+                document.getElementById('globalDateTime').value = info.dateTime || '';
+                document.getElementById('setTeam').value = info.setTeam || '';
+                document.getElementById('setVs').value = info.setVs || '';
+            }
+
+            let pData = localStorage.getItem('vb_playersData');
+            let tbody = document.getElementById('playerTableBody');
+            tbody.innerHTML = '';
+            if (pData) {
+                let players = JSON.parse(pData);
+                if (players.length > 0) {
+                    players.forEach(p => addPlayerRow(p));
+                } else {
+                    for(let i=0; i<8; i++) addPlayerRow(null);
+                }
+            } else {
+                for(let i=0; i<8; i++) addPlayerRow(null);
+            }
+
+            let sData = localStorage.getItem('vb_setsData');
+            if (sData) {
+                setsData = JSON.parse(sData);
+            }
+            loadSetDataToUI(activeSet);
+        }
+
+        function loadSetDataToUI(setNo) {
+            document.getElementById('currentSetSelect').value = setNo;
+            let data = setsData[setNo] || { finalScore: "", tactics: "", ourLog: [], oppLog: [] };
+            
+            document.getElementById('setFinalScore').value = data.finalScore || '';
+            document.getElementById('setNotesTextarea').value = data.tactics || '';
+
             let ourRows = document.querySelectorAll('#ourTeamLogBody tr');
             let oppRows = document.querySelectorAll('#oppTeamLogBody tr');
 
@@ -605,28 +675,26 @@
                 oppRows[i].querySelector('.log-player-input').value = dOpp.player;
                 oppRows[i].querySelector('.log-note').value = dOpp.note;
             }
-
-            document.getElementById('setNotesTextarea').value = data.tactics || '';
         }
 
-        // --- 核心：跨局總表統計與第二頁「其他失誤」備註同步 ---
+        // --- 核心：跨局總表自動連動計算 ---
         function recalcAllStats() {
-            saveCurrentSetData();
-
             let table = document.getElementById('playerTable');
             if (!table) return;
 
             let rows = table.querySelectorAll('tbody tr');
             let totalAutoCounts = {}; 
-            let otherErrorItems = []; // 收集全場第二頁選「其他失誤」的項目
+            let otherErrorItems = []; 
 
+            // 1. 跨局掃描所有第二頁下記錄的數據
             for (let s = 1; s <= 5; s++) {
                 let sData = setsData[s];
                 if (!sData) continue;
 
                 let processLog = (logArr) => {
+                    if(!logArr) return;
                     logArr.forEach(item => {
-                        let pNo = item.player.trim();
+                        let pNo = item.player ? item.player.trim() : '';
                         let action = item.action;
                         if (action && pNo !== '') {
                             if (!totalAutoCounts[pNo]) totalAutoCounts[pNo] = getEmptyCountObj();
@@ -648,7 +716,7 @@
                 processLog(sData.oppLog);
             }
 
-            // 更新第一頁下方的其他失誤代號說明區
+            // 2. 更新第一頁下方其他失誤代號說明區
             let container = document.getElementById('otherNotesContainer');
             if (otherErrorItems.length === 0) {
                 container.innerHTML = '<span style="color: #777; font-style: italic;">當透過第二頁選取「其他失誤」時，此處將自動產生對應編號與備註內容。</span>';
@@ -675,7 +743,7 @@
                 container.appendChild(div);
             });
 
-            // 對應欄位索引 (0:ACE, 1:SE, 3:REC-, 4:KILL, 5:ERR/BLK, 6:TIP, 8:BLK, 10:OTHER)
+            // 3. 對應第一頁欄位索引 (0:ACE, 1:SE, 3:REC-, 4:KILL, 5:ERR/BLK, 6:TIP, 8:BLK, 10:OTHER)
             let mapping = {
                 '發球得分': 0,
                 '發球失誤': 1,
@@ -687,6 +755,7 @@
                 '其他失誤': 10
             };
 
+            // 寫回第一頁表格 `.count-display` 格子內
             rows.forEach(row => {
                 let noInput = row.querySelector('.player-no-input');
                 let playerNo = noInput ? noInput.value.trim() : '';
@@ -695,28 +764,23 @@
                 if (playerNo !== '' && totalAutoCounts[playerNo]) {
                     for (let action in mapping) {
                         let idx = mapping[action];
-                        // 僅自動更新非手動調整項（或在此與手動計數器結合）
-                        // 為了讓第一頁手動加減號可以獨立運作，我們將第二頁自動算出的值作為基礎或與手動計數疊加
-                        if (displays[idx] && action !== '其他失誤') {
+                        if (displays[idx]) {
                             displays[idx].innerText = totalAutoCounts[playerNo][action] || 0;
                         }
                     }
-                    // 針對「其他失誤」(index 10)，我們將「手動按的次數 + 第二頁自動連動的次數」進行疊加
-                    if (displays[10]) {
-                        let autoOtherCount = totalAutoCounts[playerNo]['其他失誤'] || 0;
-                        // 這裡保留原本手動的數值邏輯，若您希望純粹由第二頁輸入，也可直接賦值
-                        // 讓它自動疊加最符合「手動與自動雙向皆可」的需求
-                        let currentVal = parseInt(displays[10].dataset.autoVal || 0);
-                        let diff = autoOtherCount - currentVal;
-                        displays[10].dataset.autoVal = autoOtherCount;
-                        
-                        let manualVal = parseInt(displays[10].innerText) || 0;
-                        displays[10].innerText = Math.max(autoOtherCount, manualVal); // 確保至少有自動帶入的量
+                } else {
+                    for (let action in mapping) {
+                        let idx = mapping[action];
+                        if (displays[idx]) {
+                            displays[idx].innerText = 0;
+                        }
                     }
                 }
 
                 updateNetScore(row);
             });
+
+            saveAllData();
         }
 
         function getEmptyCountObj() {
@@ -733,38 +797,34 @@
         }
 
         function clearCurrentSet() {
-            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄嗎？`)) {
-                setsData[activeSet] = { ourLog: [], oppLog: [], tactics: "" };
-                loadSetData(activeSet);
+            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄與戰術嗎？將會清空第 ${activeSet} 局連動之球員整場總數據統計`)) {
+                setsData[activeSet] = { finalScore: "", tactics: "", ourLog: [], oppLog: [] };
+                loadSetDataToUI(activeSet);
                 recalcAllStats();
             }
         }
 
         function clearAllData() {
-            if(confirm("警告：這將會清空整場比賽所有局數的記錄以及第一頁的球員總統計！確定要全部重設嗎？")) {
+            if(confirm("警告：這將會清除此瀏覽器中儲存的所有比賽資料（包括球員名單、所有局數記錄與統計）。確定要全部重設嗎？")) {
+                localStorage.clear();
                 setsData = {
-                    1: { ourLog: [], oppLog: [], tactics: "" },
-                    2: { ourLog: [], oppLog: [], tactics: "" },
-                    3: { ourLog: [], oppLog: [], tactics: "" },
-                    4: { ourLog: [], oppLog: [], tactics: "" },
-                    5: { ourLog: [], oppLog: [], tactics: "" }
+                    1: { finalScore: "", tactics: "", ourLog: [], oppLog: [] },
+                    2: { finalScore: "", tactics: "", ourLog: [], oppLog: [] },
+                    3: { finalScore: "", tactics: "", ourLog: [], oppLog: [] },
+                    4: { finalScore: "", tactics: "", ourLog: [], oppLog: [] },
+                    5: { finalScore: "", tactics: "", ourLog: [], oppLog: [] }
                 };
-                loadSetData(activeSet);
-
-                const inputs = document.querySelectorAll('input[type="text"]');
-                inputs.forEach(input => input.value = '');
-                const textareas = document.querySelectorAll('textarea');
-                textareas.forEach(ta => ta.value = '');
-                const selects = document.querySelectorAll('select');
-                selects.forEach(select => select.selectedIndex = 0);
                 
-                const displays = document.querySelectorAll('.count-display');
-                displays.forEach(span => { span.innerText = '0'; span.dataset.autoVal = '0'; });
+                document.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
+                document.querySelectorAll('textarea').forEach(ta => ta.value = '');
+                document.querySelectorAll('select').forEach(sel => sel.selectedIndex = 0);
+                
+                let tbody = document.getElementById('playerTableBody');
+                tbody.innerHTML = '';
+                for(let i=0; i<8; i++) addPlayerRow(null);
 
-                document.getElementById('otherNotesContainer').innerHTML = '<span style="color: #777; font-style: italic;">當透過第二頁選取「其他失誤」時，此處將自動產生對應編號與備註內容。</span>';
-
-                const nets = document.querySelectorAll('.net-score');
-                nets.forEach(span => { span.innerText = '0'; span.style.color = '#28a745'; });
+                initLogTables();
+                recalcAllStats();
             }
         }
     </script>
