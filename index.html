@@ -554,14 +554,26 @@
             }
         }
 
-        // 記分板按鈕控制（往表格自動填入）
+        // 記分板按鈕控制（支援加分與減一修正，雙向完美同步）
         function changeScoreboard(side, delta) {
             let curOur = parseInt(document.getElementById('scoreboardOur').innerText) || 0;
             let curOpp = parseInt(document.getElementById('scoreboardOpp').innerText) || 0;
 
             if (side === 'our') {
+                if (delta < 0 && curOur > 0) {
+                    // 減一：清空我方記錄表中對應的那一行 (第 curOur 行)
+                    let ourRows = document.querySelectorAll('#ourTeamLogBody tr');
+                    let targetRow = ourRows[curOur - 1];
+                    if (targetRow) {
+                        targetRow.querySelector('.log-opp-score').value = '';
+                        targetRow.querySelector('.log-action').value = '';
+                        targetRow.querySelector('.log-player-select').value = '';
+                        targetRow.querySelector('.log-note').value = '';
+                    }
+                }
                 curOur = Math.max(0, curOur + delta);
                 document.getElementById('scoreboardOur').innerText = curOur;
+
                 if (delta > 0 && curOur >= 1 && curOur <= 30) {
                     let ourRows = document.querySelectorAll('#ourTeamLogBody tr');
                     let targetRow = ourRows[curOur - 1];
@@ -573,8 +585,20 @@
                     }
                 }
             } else if (side === 'opp') {
+                if (delta < 0 && curOpp > 0) {
+                    // 減一：清空對方記錄表中對應的那一行 (第 curOpp 行)
+                    let oppRows = document.querySelectorAll('#oppTeamLogBody tr');
+                    let targetRow = oppRows[curOpp - 1];
+                    if (targetRow) {
+                        targetRow.querySelector('.log-our-score').value = '';
+                        targetRow.querySelector('.log-action').value = '';
+                        targetRow.querySelector('.log-player-select').value = '';
+                        targetRow.querySelector('.log-note').value = '';
+                    }
+                }
                 curOpp = Math.max(0, curOpp + delta);
                 document.getElementById('scoreboardOpp').innerText = curOpp;
+
                 if (delta > 0 && curOpp >= 1 && curOpp <= 30) {
                     let oppRows = document.querySelectorAll('#oppTeamLogBody tr');
                     let targetRow = oppRows[curOpp - 1];
@@ -587,9 +611,9 @@
                 }
             }
 
-            // 更新本局最終比分欄位
             document.getElementById('setFinalScore').value = `${curOur} : ${curOpp}`;
             saveAllData();
+            recalcAllStats();
         }
 
         // 掃描表格更新頂部記分板
@@ -603,7 +627,7 @@
             ourRows.forEach((r, idx) => {
                 let action = r.querySelector('.log-action').value;
                 let oppScore = r.querySelector('.log-opp-score').value;
-                if (action || oppScore) {
+                if (action || (oppScore !== '')) {
                     maxOur = idx + 1;
                 }
             });
@@ -611,7 +635,7 @@
             oppRows.forEach((r, idx) => {
                 let action = r.querySelector('.log-action').value;
                 let ourScore = r.querySelector('.log-our-score').value;
-                if (action || ourScore) {
+                if (action || (ourScore !== '')) {
                     maxOpp = idx + 1;
                 }
             });
