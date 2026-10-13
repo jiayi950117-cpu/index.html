@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>排球比賽記錄表</title>
+    <title>排球比賽記錄表 (完整連動旗艦版)</title>
     <style>
         /* A4 橫式設定 */
         @page {
@@ -198,6 +198,7 @@
             font-weight: bold;
             margin-top: 2px;
             word-break: break-all;
+            line-height: 1.2;
         }
 
         /* 表格內備註支援自動換行與多行輸入 */
@@ -393,7 +394,7 @@
                                         <td><strong>${i}</strong></td>
                                         <td><input class="cell-input" type="text" placeholder=" "></td>
                                         <td>
-                                            <select class="cell-select">
+                                            <select class="cell-select" onchange="syncPlayerStat()">
                                                 <option value="">- 選擇 -</option>
                                                 <option value="發球得分">發球得分</option>
                                                 <option value="攻擊得分">攻擊得分</option>
@@ -405,7 +406,7 @@
                                                 <option value="接球失誤">接球失誤</option>
                                             </select>
                                         </td>
-                                        <td><input class="cell-input" type="text"></td>
+                                        <td><input class="cell-input log-player-input" type="text" oninput="syncPlayerStat()" placeholder="背號"></td>
                                         <td><textarea class="cell-textarea" placeholder="點此輸入..."></textarea></td>
                                     </tr>
                                 `);
@@ -436,7 +437,7 @@
                                         <td><strong>${i}</strong></td>
                                         <td><input class="cell-input" type="text" placeholder=" "></td>
                                         <td>
-                                            <select class="cell-select">
+                                            <select class="cell-select" onchange="syncPlayerStat()">
                                                 <option value="">- 選擇 -</option>
                                                 <option value="發球得分">發球得分</option>
                                                 <option value="攻擊得分">攻擊得分</option>
@@ -448,7 +449,7 @@
                                                 <option value="接球失誤">接球失誤</option>
                                             </select>
                                         </td>
-                                        <td><input class="cell-input" type="text"></td>
+                                        <td><input class="cell-input log-player-input" type="text" oninput="syncPlayerStat()" placeholder="背號"></td>
                                         <td><textarea class="cell-textarea" placeholder="點此輸入..."></textarea></td>
                                     </tr>
                                 `);
@@ -467,7 +468,7 @@
     </div>
 
     <script>
-        let errorCounter = 0;
+        let noteUniqueCounter = 0;
 
         function createCounterTD() {
             return `<td>
@@ -482,8 +483,11 @@
         function addPlayerRow() {
             let tbody = document.getElementById('playerTableBody');
             let tr = document.createElement('tr');
+            let rowUniqueId = 'row-' + Math.random().toString(36).substr(2, 9);
+            tr.dataset.rowUniqueId = rowUniqueId;
+
             tr.innerHTML = `
-                <td><input class="cell-input" type="text"></td>
+                <td><input class="cell-input player-no-input" type="text" oninput="syncPlayerStat()"></td>
                 <td><input class="cell-input" type="text" style="text-align:left;"></td>
                 ${createCounterTD()}
                 ${createCounterTD()}
@@ -548,13 +552,91 @@
             }
         }
 
+        // 核心連動邏輯：第二頁 8 個選項 $\rightarrow$ 自動加總到第一頁對應背號球員的計數器中
+        function syncPlayerStat() {
+            let table = document.getElementById('playerTable');
+            if (!table) return;
+
+            let rows = table.querySelectorAll('tbody tr');
+            
+            // 1. 先統計第二頁中，各個背號所獲得的各項次數
+            let autoCounts = {}; 
+
+            let logTables = document.querySelectorAll('.column-box table');
+            logTables.forEach(logTable => {
+                let logRows = logTable.querySelectorAll('tbody tr');
+                logRows.forEach(logRow => {
+                    let select = logRow.querySelector('.cell-select');
+                    let playerInput = logRow.querySelector('.log-player-input');
+
+                    if (select && playerInput) {
+                        let action = select.value;
+                        let pNo = playerInput.value.trim();
+
+                        if (action && pNo !== '') {
+                            if (!autoCounts[pNo]) {
+                                autoCounts[pNo] = { 
+                                    '發球得分': 0, 
+                                    '發球失誤': 0, 
+                                    '接球失誤': 0, 
+                                    '攻擊得分': 0, 
+                                    '攻擊失誤': 0, 
+                                    '吊球得分': 0, 
+                                    '攔網得分': 0 
+                                };
+                            }
+                            if (autoCounts[pNo][action] !== undefined) {
+                                autoCounts[pNo][action]++;
+                            }
+                        }
+                    }
+                });
+            });
+
+            // 2. 對應到第一頁欄位 (0:ACE, 1:SE, 3:REC-, 4:KILL, 5:ERR/BLK, 6:TIP, 8:BLK)
+            let mapping = {
+                '發球得分': 0,
+                '發球失誤': 1,
+                '接球失誤': 3,
+                '攻擊得分': 4,
+                '攻擊失誤': 5,
+                '吊球得分': 6,
+                '攔網得分': 8
+            };
+
+            // 3. 更新第一頁各列數據並即時計算 NET
+            rows.forEach(row => {
+                let noInput = row.querySelector('.player-no-input');
+                let playerNo = noInput ? noInput.value.trim() : '';
+                let displays = row.querySelectorAll('.count-display');
+
+                if (playerNo !== '' && autoCounts[playerNo]) {
+                    for (let action in mapping) {
+                        let idx = mapping[action];
+                        if (displays[idx]) {
+                            displays[idx].innerText = autoCounts[playerNo][action] || 0;
+                        }
+                    }
+                } else {
+                    // 若第二頁無該球員記錄，將自動連動項歸零（手動項 REC+, COVER, OTHER 不受影響）
+                    for (let action in mapping) {
+                        let idx = mapping[action];
+                        if (displays[idx]) {
+                            displays[idx].innerText = 0;
+                        }
+                    }
+                }
+
+                updateNetScore(row);
+            });
+        }
+
         function addOtherError(btn) {
-            errorCounter++;
-            let codeId = `note-item-${errorCounter}`;
-            let codeText = `[${errorCounter}]`;
+            noteUniqueCounter++;
+            let noteId = `note-item-${noteUniqueCounter}`;
 
             let row = btn.closest('tr');
-            let displaySpan = row.querySelectorAll('.count-display')[10]; // 其他失誤的 count-display
+            let displaySpan = row.querySelectorAll('.count-display')[10];
             
             if (displaySpan) {
                 let currentVal = parseInt(displaySpan.innerText) || 0;
@@ -562,61 +644,99 @@
                 updateNetScore(row);
             }
 
-            // 將代號追加顯示在該格的標籤容器中（不覆蓋前面的代號）
-            let tagDisplay = row.querySelector('.error-tag-display');
-            let currentTags = tagDisplay.getAttribute('data-tags') ? JSON.parse(tagDisplay.getAttribute('data-tags')) : [];
-            currentTags.push({ id: codeId, text: codeText });
-            tagDisplay.setAttribute('data-tags', JSON.stringify(currentTags));
-            tagDisplay.innerText = currentTags.map(t => t.text).join(' ');
-
             let noInput = row.cells[0].querySelector('input').value || '?';
             let nameInput = row.cells[1].querySelector('input').value || '未命名';
 
             let container = document.getElementById('otherNotesContainer');
-            if(errorCounter === 1 && container.querySelector('span')) {
+            if(container.querySelector('span')) {
                 container.innerHTML = '';
             }
 
             let div = document.createElement('div');
             div.className = 'note-item';
-            div.id = codeId;
-            div.innerHTML = `<strong>${codeText}</strong> (背號:${noInput} ${nameInput}): <input type="text" placeholder="輸入失誤原因..."><button class="del-note-btn" onclick="removeOtherError('${codeId}')" title="刪除此備註">❌</button>`;
+            div.id = noteId;
+            div.dataset.rowUniqueId = row.dataset.rowUniqueId;
             
-            div.dataset.rowId = row.rowIndex; 
+            div.innerHTML = `<strong><span class="note-num-text"></span></strong> (背號:${noInput} ${nameInput}): <input type="text" placeholder="輸入失誤原因..."><button class="del-note-btn" onclick="removeOtherError('${noteId}')" title="刪除此備註">❌</button>`;
+            
             container.appendChild(div);
+
+            renumberNotes();
         }
 
         function removeOtherError(noteId) {
             let noteDiv = document.getElementById(noteId);
             if (!noteDiv) return;
 
-            let rowIndex = parseInt(noteDiv.dataset.rowId);
+            let rowUniqueId = noteDiv.dataset.rowUniqueId;
             let table = document.getElementById('playerTable');
             
-            if (table && table.rows[rowIndex]) {
-                let row = table.rows[rowIndex];
-                let displaySpan = row.querySelectorAll('.count-display')[10]; // 其他失誤的 count-display
+            let targetRow = null;
+            if (table) {
+                for (let i = 1; i < table.rows.length; i++) {
+                    if (table.rows[i].dataset.rowUniqueId === rowUniqueId) {
+                        targetRow = table.rows[i];
+                        break;
+                    }
+                }
+            }
+
+            if (targetRow) {
+                let displaySpan = targetRow.querySelectorAll('.count-display')[10];
                 if (displaySpan) {
                     let currentVal = parseInt(displaySpan.innerText) || 0;
                     if (currentVal > 0) {
                         displaySpan.innerText = currentVal - 1;
-                        updateNetScore(row);
+                        updateNetScore(targetRow);
                     }
                 }
-
-                // 同時從該格的標籤中移除對應代號
-                let tagDisplay = row.querySelector('.error-tag-display');
-                let currentTags = tagDisplay.getAttribute('data-tags') ? JSON.parse(tagDisplay.getAttribute('data-tags')) : [];
-                currentTags = currentTags.filter(t => t.id !== noteId);
-                tagDisplay.setAttribute('data-tags', JSON.stringify(currentTags));
-                tagDisplay.innerText = currentTags.map(t => t.text).join(' ');
             }
 
             noteDiv.remove();
 
+            renumberNotes();
+
             let container = document.getElementById('otherNotesContainer');
             if (container.children.length === 0) {
                 container.innerHTML = '<span style="color: #777; font-style: italic;">點擊「其他失誤」欄位中的記事按鈕（📝），此處將自動產生對應編號與備註欄。</span>';
+            }
+        }
+
+        function renumberNotes() {
+            let container = document.getElementById('otherNotesContainer');
+            let noteItems = container.querySelectorAll('.note-item');
+            
+            let table = document.getElementById('playerTable');
+            let rowTagsMap = {};
+
+            noteItems.forEach((item, index) => {
+                let newNum = index + 1;
+                let formattedNum = `[${newNum}]`;
+                
+                let numSpan = item.querySelector('.note-num-text');
+                if (numSpan) numSpan.innerText = formattedNum;
+
+                let rowUniqueId = item.dataset.rowUniqueId;
+                if (!rowTagsMap[rowUniqueId]) {
+                    rowTagsMap[rowUniqueId] = [];
+                }
+                rowTagsMap[rowUniqueId].push(formattedNum);
+            });
+
+            if (table) {
+                for (let i = 1; i < table.rows.length; i++) {
+                    let row = table.rows[i];
+                    let rowUniqueId = row.dataset.rowUniqueId;
+                    let tagDisplay = row.querySelector('.error-tag-display');
+                    
+                    if (tagDisplay) {
+                        if (rowTagsMap[rowUniqueId] && rowTagsMap[rowUniqueId].length > 0) {
+                            tagDisplay.innerText = rowTagsMap[rowUniqueId].join(' ');
+                        } else {
+                            tagDisplay.innerText = '';
+                        }
+                    }
+                }
             }
         }
 
@@ -633,13 +753,14 @@
                 displays.forEach(span => span.innerText = '0');
 
                 const tagDisplays = document.querySelectorAll('.error-tag-display');
-                tagDisplays.forEach(td => { td.innerText = ''; td.removeAttribute('data-tags'); });
+                tagDisplays.forEach(td => { td.innerText = ''; });
+
+                document.getElementById('otherNotesContainer').innerHTML = '<span style="color: #777; font-style: italic;">點擊「其他失誤」欄位中的記事按鈕（📝），此處將自動產生對應編號與備註欄。</span>';
 
                 const nets = document.querySelectorAll('.net-score');
                 nets.forEach(span => { span.innerText = '0'; span.style.color = '#28a745'; });
 
-                errorCounter = 0;
-                document.getElementById('otherNotesContainer').innerHTML = '<span style="color: #777; font-style: italic;">點擊「其他失誤」欄位中的記事按鈕（📝），此處將自動產生對應編號與備註欄。</span>';
+                noteUniqueCounter = 0;
             }
         }
     </script>
