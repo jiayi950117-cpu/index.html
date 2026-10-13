@@ -373,8 +373,8 @@
         <div class="subtitle">VOLLEYBALL MATCH RECORD SHEET (TOTAL CUMULATIVE STATISTICS)</div>
         
         <div class="header-info">
-            <div>隊伍 (TEAM): <input type="text" id="globalTeam" class="save-global" oninput="saveAllData()" style="width: 150px;"></div>
-            <div>對手 (VS): <input type="text" id="globalVs" class="save-global" oninput="saveAllData()" style="width: 150px;"></div>
+            <div>隊伍 (TEAM): <input type="text" id="globalTeam" class="save-global sync-team" oninput="syncFields('team', this.value); saveAllData();" style="width: 150px;"></div>
+            <div>對手 (VS): <input type="text" id="globalVs" class="save-global sync-vs" oninput="syncFields('vs', this.value); saveAllData();" style="width: 150px;"></div>
             <div>場地 (LOCATION): <input type="text" id="globalLocation" class="save-global" oninput="saveAllData()" style="width: 150px;"></div>
             <div>日期/時間 (DATE/TIME): <input type="text" id="globalDateTime" class="save-global" oninput="saveAllData()" style="width: 130px;"></div>
         </div>
@@ -420,8 +420,8 @@
         <div class="subtitle">POINT-BY-POINT LOG (OUR TEAM VS OPPONENT)</div>
         
         <div class="header-info">
-            <div>隊伍 (TEAM): <input type="text" id="setTeam" class="save-global" oninput="saveAllData()" style="width: 120px;"></div>
-            <div>對手 (VS): <input type="text" id="setVs" class="save-global" oninput="saveAllData()" style="width: 120px;"></div>
+            <div>隊伍 (TEAM): <input type="text" id="setTeam" class="save-global sync-team" oninput="syncFields('team', this.value); saveAllData();" style="width: 120px;"></div>
+            <div>對手 (VS): <input type="text" id="setVs" class="save-global sync-vs" oninput="syncFields('vs', this.value); saveAllData();" style="width: 120px;"></div>
             <div>
                 <strong>目前記錄局數:</strong> 
                 <select id="currentSetSelect" onchange="switchSet(this.value)" style="font-weight: bold; color: #007bff; font-size: 14px;">
@@ -438,7 +438,7 @@
         <!-- 頂部即時連動計分板 -->
         <div class="scoreboard-container">
             <div class="score-box">
-                <span class="score-team-title">我方得分</span>
+                <span class="score-team-title" id="displayOurTeamName">我方得分</span>
                 <button class="score-ctrl-btn" onclick="changeScoreboard('our', -1)">-</button>
                 <span id="scoreboardOur" class="score-num">0</span>
                 <button class="score-ctrl-btn" onclick="changeScoreboard('our', 1)">+</button>
@@ -448,14 +448,14 @@
                 <button class="score-ctrl-btn" onclick="changeScoreboard('opp', -1)">-</button>
                 <span id="scoreboardOpp" class="score-num">0</span>
                 <button class="score-ctrl-btn" onclick="changeScoreboard('opp', 1)">+</button>
-                <span class="score-team-title">對方得分</span>
+                <span class="score-team-title" id="displayOppTeamName">對方得分</span>
             </div>
         </div>
 
         <div class="dual-tables">
             <!-- 左側：我方記錄 -->
             <div class="column-box">
-                <div class="column-title">我方得分記錄 (OUR TEAM)</div>
+                <div class="column-title" id="titleOurTeamLog">我方得分記錄 (OUR TEAM)</div>
                 <table>
                     <thead>
                         <tr>
@@ -472,7 +472,7 @@
 
             <!-- 右側：對方記錄 -->
             <div class="column-box">
-                <div class="column-title">對方得分記錄 (OPPONENT)</div>
+                <div class="column-title" id="titleOppTeamLog">對方得分記錄 (OPPONENT)</div>
                 <table>
                     <thead>
                         <tr>
@@ -510,7 +510,32 @@
             updatePlayerSelectOptions();
             recalcAllStats();       
             updateScoreboardFromTables();
+            updateTeamNamesDisplay();
         };
+
+        // 雙向同步隊伍/對手名稱欄位與計分板標題
+        function syncFields(type, val) {
+            let elements = document.querySelectorAll('.sync-' + type);
+            elements.forEach(el => {
+                if (el.value !== val) {
+                    el.value = val;
+                }
+            });
+            updateTeamNamesDisplay();
+        }
+
+        function updateTeamNamesDisplay() {
+            let teamVal = document.getElementById('globalTeam').value.trim();
+            let vsVal = document.getElementById('globalVs').value.trim();
+
+            let ourName = teamVal !== '' ? teamVal : '我方';
+            let oppName = vsVal !== '' ? vsVal : '對方';
+
+            document.getElementById('displayOurTeamName').innerText = ourName + '得分';
+            document.getElementById('displayOppTeamName').innerText = oppName + '得分';
+            document.getElementById('titleOurTeamLog').innerText = ourName + '得分記錄 (OUR TEAM)';
+            document.getElementById('titleOppTeamLog').innerText = oppName + '得分記錄 (OPPONENT)';
+        }
 
         function initLogTables() {
             let ourTbody = document.getElementById('ourTeamLogBody');
@@ -561,7 +586,6 @@
 
             if (side === 'our') {
                 if (delta < 0 && curOur > 0) {
-                    // 減一：清空我方記錄表中對應的那一行 (第 curOur 行)
                     let ourRows = document.querySelectorAll('#ourTeamLogBody tr');
                     let targetRow = ourRows[curOur - 1];
                     if (targetRow) {
@@ -586,7 +610,6 @@
                 }
             } else if (side === 'opp') {
                 if (delta < 0 && curOpp > 0) {
-                    // 減一：清空對方記錄表中對應的那一行 (第 curOpp 行)
                     let oppRows = document.querySelectorAll('#oppTeamLogBody tr');
                     let targetRow = oppRows[curOpp - 1];
                     if (targetRow) {
@@ -760,13 +783,14 @@
         }
 
         function saveAllData() {
+            let teamVal = document.getElementById('globalTeam').value;
+            let vsVal = document.getElementById('globalVs').value;
+
             let globalInfo = {
-                team: document.getElementById('globalTeam').value,
-                vs: document.getElementById('globalVs').value,
+                team: teamVal,
+                vs: vsVal,
                 location: document.getElementById('globalLocation').value,
-                dateTime: document.getElementById('globalDateTime').value,
-                setTeam: document.getElementById('setTeam').value,
-                setVs: document.getElementById('setVs').value
+                dateTime: document.getElementById('globalDateTime').value
             };
             localStorage.setItem('vb_globalInfo', JSON.stringify(globalInfo));
 
@@ -822,12 +846,18 @@
             let gInfo = localStorage.getItem('vb_globalInfo');
             if (gInfo) {
                 let info = JSON.parse(gInfo);
-                document.getElementById('globalTeam').value = info.team || '';
-                document.getElementById('globalVs').value = info.vs || '';
+                let teamVal = info.team || '';
+                let vsVal = info.vs || '';
+                
+                document.getElementById('globalTeam').value = teamVal;
+                document.getElementById('globalVs').value = vsVal;
+                document.getElementById('setTeam').value = teamVal;
+                document.getElementById('setVs').value = vsVal;
+
                 document.getElementById('globalLocation').value = info.location || '';
                 document.getElementById('globalDateTime').value = info.dateTime || '';
-                document.getElementById('setTeam').value = info.setTeam || '';
-                document.getElementById('setVs').value = info.setVs || '';
+                
+                updateTeamNamesDisplay();
             }
 
             let sData = localStorage.getItem('vb_setsData');
@@ -1055,6 +1085,7 @@
                 updatePlayerSelectOptions();
                 recalcAllStats();
                 updateScoreboardFromTables();
+                updateTeamNamesDisplay();
             }
         }
     </script>
