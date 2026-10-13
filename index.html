@@ -831,7 +831,7 @@
         }
 
         function clearCurrentSet() {
-            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄與戰術嗎？將連帶清空第 ${activeSet}局之球員整場總數據統計`)) {
+            if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄與戰術嗎？將連帶清空第${activeSet}局之球員整場總數據統計`)) {
                 setsData[activeSet] = { finalScore: "", tactics: "", ourLog: [], oppLog: [] };
                 loadSetDataToUI(activeSet);
                 recalcAllStats();
