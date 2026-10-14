@@ -462,7 +462,7 @@
                     <li><strong>2. 自動即時存檔</strong>：所有輸入的球員資料、比分、動作與戰術備註都會自動保存在瀏覽器中，重新整理或關閉分頁絕不遺失。</li>
                     <li><strong>3. 智慧雙向連動</strong>：
                         <ul>
-                            <li><strong>第一頁 ⇄ 第二頁</strong>：第一頁輸入的球員背號與姓名，會自動同步成為第二頁逐分記錄表的「背號下拉選單」。</li>
+                            <li><strong>第一頁 ⇄ 第二頁</strong>：第一頁輸入的球員背號或姓名，會自動同步成為第二頁逐分記錄表的下拉選單選項。</li>
                             <li><strong>計分板 ⇄ 逐分表記錄</strong>：在第二頁頂部計分板按 <code>+</code> / <code>-</code> 加減分時，下方表格會自動同步產生或修正紀錄；反之，在下方表格輸入也會即時更新上方比分。</li>
                             <li><strong>隊伍名稱同步</strong>：在第一頁或第二頁輸入「隊伍」與「對手」，兩頁的標題與計分板會全面同步更新。</li>
                         </ul>
@@ -474,7 +474,7 @@
                 <h3>📄 第一頁：球員整場總數據統計 (Total Cumulative Statistics)</h3>
                 <ul>
                     <li><strong>賽事基本資訊</strong>：最上方可輸入「隊伍 (TEAM)」、「對手 (VS)」、「場地 (LOCATION)」與「日期/時間」。</li>
-                    <li><strong>球員名單設定</strong>：輸入球員背號與姓名。點擊下方的 <strong>「＋ 新增球員列」</strong> 可增加記錄欄位。</li>
+                    <li><strong>球員名單設定</strong>：輸入球員背號或姓名（只填姓名也可同步至第二頁）。點擊下方的 <strong><span>＋ 新增球員列</span></strong> 可增加記錄欄位。</li>
                     <li><strong>各項數據追蹤</strong>：
                         <ul>
                             <li>支援 <strong>ACE</strong>（發球得分）、<strong>SE</strong>（發球失誤）、<strong>REC+</strong>（接球到位）、<strong>REC-</strong>（接球失誤）、<strong>KILL</strong>（攻擊得分）、<strong>ERR</strong>（攻擊失誤）、<strong>TIP</strong>（吊球得分）、<strong>TIP ER</strong>（吊球失誤）、<strong>BLK</strong>（攔網得分）、<strong>BHE</strong>（攔網失誤）、<strong>COVER</strong>（保護成功）、<strong>OTHER</strong>（其他失誤）。</li>
@@ -496,7 +496,7 @@
                     </li>
                     <li><strong>雙欄逐分記錄</strong>：
                         <ul>
-                            <li><strong>我方得分記錄</strong>：記錄我方得分時的對方分數、得分方式（下拉選單）、參與球員背號（自動從第一頁帶入）與備註。</li>
+                            <li><strong>我方得分記錄</strong>：記錄我方得分時的對方分數、得分方式（下拉選單）、參與球員（自動從第一頁帶入）與備註。</li>
                             <li><strong>對方得分記錄</strong>：記錄對方得分時的我方分數、失分方式、球員與備註。</li>
                         </ul>
                     </li>
@@ -506,7 +506,7 @@
                 <h2>三、 右上角懸浮功能按鈕說明</h2>
                 <ul>
                     <li><strong>說明</strong>：打開本使用說明視窗。</li>
-                    <li><strong>清空本局</strong>：快速清除目前正在檢視的該局逐分記錄與戰術。</li>
+                    <li><strong>清空本局</strong>：快速清除目前正在檢視的該局逐分記錄與戰術（並自動從第一頁總成績中扣除本局數據）。</li>
                     <li><strong>全部重設</strong>：清除此瀏覽器內所有的比賽快取資料（包含球員名單、所有局數與比分）。<strong>注意：點擊後將完全歸零，請謹慎使用！</strong></li>
                     <li><strong>列印 / 輸出 PDF</strong>：自動將報紙/表單格式排版為 A4 橫式，可直接連接印表機列印或儲存為 PDF 檔案。</li>
                 </ul>
@@ -730,7 +730,7 @@
                         <td><strong>${i}</strong></td>
                         <td><input class="cell-input log-opp-score" type="text" oninput="saveAllData(); updateScoreboardFromTables();" placeholder=" "></td>
                         <td><select class="cell-select log-action" onchange="saveAllData(); recalcAllStats();">${actionOptions}</select></td>
-                        <td><select class="cell-select log-player-select" onchange="saveAllData(); recalcAllStats();"><option value="">- 背號 -</option></select></td>
+                        <td><select class="cell-select log-player-select" onchange="saveAllData(); recalcAllStats();"><option value="">- 球員 -</option></select></td>
                         <td><textarea class="cell-textarea log-note" oninput="saveAllData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
                     </tr>
                 `;
@@ -739,11 +739,54 @@
                         <td><strong>${i}</strong></td>
                         <td><input class="cell-input log-our-score" type="text" oninput="saveAllData(); updateScoreboardFromTables();" placeholder=" "></td>
                         <td><select class="cell-select log-action" onchange="saveAllData(); recalcAllStats();">${actionOptions}</select></td>
-                        <td><select class="cell-select log-player-select" onchange="saveAllData(); recalcAllStats();"><option value="">- 背號 -</option></select></td>
+                        <td><select class="cell-select log-player-select" onchange="saveAllData(); recalcAllStats();"><option value="">- 球員 -</option></select></td>
                         <td><textarea class="cell-textarea log-note" oninput="saveAllData(); recalcAllStats();" placeholder="點此輸入..."></textarea></td>
                     </tr>
                 `;
             }
+        }
+
+        // 支援只填名字也能同步到第二頁下拉選單
+        function updatePlayerSelectOptions() {
+            let playerRows = document.querySelectorAll('#playerTableBody tr');
+            let playerList = [];
+
+            playerRows.forEach(r => {
+                let no = r.querySelector('.player-no-input').value.trim();
+                let name = r.cells[1].querySelector('input').value.trim();
+                
+                // 只要背號或名字其中一個有填，就加入選單清單
+                if (no !== '' || name !== '') {
+                    let displayLabel = '';
+                    let optionValue = '';
+
+                    if (no !== '' && name !== '') {
+                        displayLabel = `${no} - ${name}`;
+                        optionValue = no; // 優先以背號作為記錄依據
+                    } else if (no !== '') {
+                        displayLabel = no;
+                        optionValue = no;
+                    } else {
+                        displayLabel = name;
+                        optionValue = name; // 如果沒填背號，則以名字作為對應依據
+                    }
+
+                    playerList.push({ value: optionValue, label: displayLabel });
+                }
+            });
+
+            let selectElements = document.querySelectorAll('.log-player-select');
+            selectElements.forEach(select => {
+                let currentVal = select.value;
+                select.innerHTML = '<option value="">- 球員 -</option>';
+                playerList.forEach(p => {
+                    let opt = document.createElement('option');
+                    opt.value = p.value;
+                    opt.textContent = p.label;
+                    select.appendChild(opt);
+                });
+                select.value = currentVal;
+            });
         }
 
         // 記分板按鈕控制（支援加分與減一修正，雙向完美同步）
@@ -835,33 +878,6 @@
             document.getElementById('setFinalScore').value = `${maxOur} : ${maxOpp}`;
         }
 
-        function updatePlayerSelectOptions() {
-            let playerRows = document.querySelectorAll('#playerTableBody tr');
-            let playerList = [];
-
-            playerRows.forEach(r => {
-                let no = r.querySelector('.player-no-input').value.trim();
-                let name = r.cells[1].querySelector('input').value.trim();
-                if (no !== '') {
-                    playerList.push({ no: no, name: name });
-                }
-            });
-
-            let selectElements = document.querySelectorAll('.log-player-select');
-            selectElements.forEach(select => {
-                let currentVal = select.value;
-                select.innerHTML = '<option value="">- 背號 -</option>';
-                playerList.forEach(p => {
-                    let label = p.name ? `${p.no} (${p.name})` : p.no;
-                    let opt = document.createElement('option');
-                    opt.value = p.no;
-                    opt.textContent = label;
-                    select.appendChild(opt);
-                });
-                select.value = currentVal;
-            });
-        }
-
         function createCounterTD(val = 0) {
             return `<td>
                 <div class="counter-group">
@@ -884,7 +900,7 @@
 
             tr.innerHTML = `
                 <td><input class="cell-input player-no-input" type="text" value="${noVal}" oninput="updatePlayerSelectOptions(); saveAllData(); recalcAllStats()"></td>
-                <td><input class="cell-input" type="text" value="${nameVal}" style="text-align:left;" oninput="updatePlayerSelectOptions(); saveAllData()"></td>
+                <td><input class="cell-input" type="text" value="${nameVal}" style="text-align:left;" oninput="updatePlayerSelectOptions(); saveAllData(); recalcAllStats()"></td>
                 ${createCounterTD(counts[0])}
                 ${createCounterTD(counts[1])}
                 ${createCounterTD(counts[2])}
@@ -1077,19 +1093,10 @@
         // --- 核心：清空當前局數並同步重設第一頁累計統計與 LocalStorage ---
         function clearCurrentSet() {
             if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄與戰術嗎？（第一頁的整場總成績會自動扣除本局數據）`)) {
-                // 1. 重設當前局數資料
                 setsData[activeSet] = { finalScore: "", tactics: "", ourLog: [], oppLog: [] };
-                
-                // 2. 刷新第二頁 UI 表格欄位與戰術區
                 loadSetDataToUI(activeSet);
-                
-                // 3. 即時寫入 LocalStorage 保存清空後的狀態
                 saveAllData();
-                
-                // 4. 強制重新計算整場累計統計（第一頁數據將自動扣除本局）
                 recalcAllStats();
-                
-                // 5. 重新掃描第二頁表格更新頂部記分板與比分
                 updateScoreboardFromTables();
             }
         }
@@ -1110,17 +1117,17 @@
                 let processLog = (logArr) => {
                     if(!logArr) return;
                     logArr.forEach(item => {
-                        let pNo = item.player ? item.player.trim() : '';
+                        let pKey = item.player ? item.player.trim() : '';
                         let action = item.action;
-                        if (action && pNo !== '') {
-                            if (!totalAutoCounts[pNo]) totalAutoCounts[pNo] = getEmptyCountObj();
-                            if (totalAutoCounts[pNo][action] !== undefined) {
-                                totalAutoCounts[pNo][action]++;
+                        if (action && pKey !== '') {
+                            if (!totalAutoCounts[pKey]) totalAutoCounts[pKey] = getEmptyCountObj();
+                            if (totalAutoCounts[pKey][action] !== undefined) {
+                                totalAutoCounts[pKey][action]++;
                             }
 
                             if (action === '其他失誤') {
                                 otherErrorItems.push({
-                                    playerNo: pNo,
+                                    playerKey: pKey,
                                     noteText: item.note ? item.note.trim() : '無備註'
                                 });
                             }
@@ -1143,21 +1150,22 @@
             otherErrorItems.forEach((errItem, index) => {
                 let newNum = index + 1;
                 let formattedNum = `[${newNum}]`;
-                let pNo = errItem.playerNo;
+                let pKey = errItem.playerKey;
 
                 let targetRow = null;
-                let playerName = '未命名';
+                let displayIdentifier = pKey;
                 rows.forEach(r => {
-                    let noIn = r.querySelector('.player-no-input');
-                    if (noIn && noIn.value.trim() === pNo) {
+                    let noIn = r.querySelector('.player-no-input').value.trim();
+                    let nameIn = r.cells[1].querySelector('input').value.trim();
+                    if (noIn === pKey || nameIn === pKey) {
                         targetRow = r;
-                        playerName = r.cells[1].querySelector('input').value || '未命名';
+                        displayIdentifier = (noIn && nameIn) ? `${noIn} (${nameIn})` : (noIn || nameIn);
                     }
                 });
 
                 let div = document.createElement('div');
                 div.className = 'note-item';
-                div.innerHTML = `<strong>${formattedNum}</strong> (背號:${pNo} ${playerName}): <input type="text" value="${errItem.noteText}" readonly style="width:180px;">`;
+                div.innerHTML = `<strong>${formattedNum}</strong> (${displayIdentifier}): <input type="text" value="${errItem.noteText}" readonly style="width:180px;">`;
                 container.appendChild(div);
 
                 if (targetRow) {
@@ -1181,17 +1189,19 @@
             };
 
             rows.forEach(row => {
-                let noInput = row.querySelector('.player-no-input');
-                let playerNo = noInput ? noInput.value.trim() : '';
+                let noInput = row.querySelector('.player-no-input').value.trim();
+                let nameInput = row.cells[1].querySelector('input').value.trim();
                 let displays = row.querySelectorAll('.count-display');
                 let rUid = row.dataset.rowUniqueId;
 
-                // 徹底歸零或套用重新計算後的統計數字
+                // 支援背號或名字作為匹配鍵
+                let matchKey = noInput !== '' ? noInput : nameInput;
+
                 for (let action in mapping) {
                     let idx = mapping[action];
                     if (displays[idx]) {
-                        if (playerNo !== '' && totalAutoCounts[playerNo] && totalAutoCounts[playerNo][action] !== undefined) {
-                            displays[idx].innerText = totalAutoCounts[playerNo][action];
+                        if (matchKey !== '' && totalAutoCounts[matchKey] && totalAutoCounts[matchKey][action] !== undefined) {
+                            displays[idx].innerText = totalAutoCounts[matchKey][action];
                         } else {
                             displays[idx].innerText = 0;
                         }
