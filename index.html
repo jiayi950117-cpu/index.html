@@ -474,7 +474,7 @@
                 <h3>📄 第一頁：球員整場總數據統計 (Total Cumulative Statistics)</h3>
                 <ul>
                     <li><strong>賽事基本資訊</strong>：最上方可輸入「隊伍 (TEAM)」、「對手 (VS)」、「場地 (LOCATION)」與「日期/時間」。</li>
-                    <li><strong>球員名單設定</strong>：輸入球員背號或姓名（只填姓名也可同步至第二頁）。點擊下方的 <strong><span>＋ 新增球員列</span></strong> 可增加記錄欄位。</li>
+                    <li><strong>球員名單設定</strong>：輸入球員背號或姓名（只填姓名也可同步至第二頁）。點擊下方的 <strong>「＋ 新增球員列」</strong> 可增加記錄欄位。</li>
                     <li><strong>各項數據追蹤</strong>：
                         <ul>
                             <li>支援 <strong>ACE</strong>（發球得分）、<strong>SE</strong>（發球失誤）、<strong>REC+</strong>（接球到位）、<strong>REC-</strong>（接球失誤）、<strong>KILL</strong>（攻擊得分）、<strong>ERR</strong>（攻擊失誤）、<strong>TIP</strong>（吊球得分）、<strong>TIP ER</strong>（吊球失誤）、<strong>BLK</strong>（攔網得分）、<strong>BHE</strong>（攔網失誤）、<strong>COVER</strong>（保護成功）、<strong>OTHER</strong>（其他失誤）。</li>
@@ -719,6 +719,7 @@
                 <option value="對手失誤">對手失誤</option>
                 <option value="發球失誤">發球失誤</option>
                 <option value="攻擊失誤">攻擊失誤</option>
+                <option value="吊球失誤">吊球失誤</option>
                 <option value="接球失誤">接球失誤</option>
                 <option value="攔網失誤">攔網失誤</option>
                 <option value="其他失誤">其他失誤</option>
@@ -746,7 +747,7 @@
             }
         }
 
-        // 支援只填名字也能同步到第二頁下拉選單
+        // 強化版球員下拉選單同步（支援背號、僅姓名、或兩者皆有，且穩定記錄）
         function updatePlayerSelectOptions() {
             let playerRows = document.querySelectorAll('#playerTableBody tr');
             let playerList = [];
@@ -755,20 +756,19 @@
                 let no = r.querySelector('.player-no-input').value.trim();
                 let name = r.cells[1].querySelector('input').value.trim();
                 
-                // 只要背號或名字其中一個有填，就加入選單清單
                 if (no !== '' || name !== '') {
                     let displayLabel = '';
                     let optionValue = '';
 
                     if (no !== '' && name !== '') {
                         displayLabel = `${no} - ${name}`;
-                        optionValue = no; // 優先以背號作為記錄依據
+                        optionValue = no; 
                     } else if (no !== '') {
                         displayLabel = no;
                         optionValue = no;
                     } else {
                         displayLabel = name;
-                        optionValue = name; // 如果沒填背號，則以名字作為對應依據
+                        optionValue = name; 
                     }
 
                     playerList.push({ value: optionValue, label: displayLabel });
@@ -1062,6 +1062,8 @@
                 for(let i=0; i<8; i++) addPlayerRow(null);
             }
 
+            // 先載入球員選單選項，再載入每局逐分紀錄，確保選單球員不會遺失
+            updatePlayerSelectOptions();
             loadSetDataToUI(activeSet);
         }
 
@@ -1090,7 +1092,6 @@
             }
         }
 
-        // --- 核心：清空當前局數並同步重設第一頁累計統計與 LocalStorage ---
         function clearCurrentSet() {
             if(confirm(`確定要清空「第 ${activeSet} 局」的所有逐分記錄與戰術嗎？（第一頁的整場總成績會自動扣除本局數據）`)) {
                 setsData[activeSet] = { finalScore: "", tactics: "", ourLog: [], oppLog: [] };
@@ -1194,7 +1195,6 @@
                 let displays = row.querySelectorAll('.count-display');
                 let rUid = row.dataset.rowUniqueId;
 
-                // 支援背號或名字作為匹配鍵
                 let matchKey = noInput !== '' ? noInput : nameInput;
 
                 for (let action in mapping) {
